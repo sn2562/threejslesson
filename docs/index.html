@@ -18,6 +18,7 @@
 			var container;
 			var camera, scene, renderer, group, particle;
 			var box;//mesh
+			var lines;//material
 
 
 
@@ -34,44 +35,25 @@
 				//シーンを初期化
 				scene = new THREE.Scene();
 
-				//boxが表示できるかテスト
-				box = new THREE.Mesh(
-					new THREE.BoxGeometry(50,50,50),
-					new THREE.MeshLambertMaterial({color:0xff0000})
-				);
-				box.position.set(0,0,0);
-				//				scene.add(box);//シーンへ追加
 
-				//1000個のパーティクルを生成する
-				group = new THREE.Group();
-				scene.add(group);//シーンへ追加
+				// line
+				//create a blue LineBasicMaterial
+				var material = new THREE.LineBasicMaterial({ color: 0x0000ff });
 
-				var program = function ( context ) {
-					context.beginPath();
-					context.arc( 0, 0, 0.5, 0, Math.PI*2, true );
-					context.fill();
-				};
+				var geometry = new THREE.Geometry();
+				
+				geometry.vertices.push(new THREE.Vector3(-10, 0, 0));
+				geometry.vertices.push(new THREE.Vector3(0, 10, 0));
+				geometry.vertices.push(new THREE.Vector3(10, 0, 0));
 
-				for ( var i = 0; i < 1000; i++ ) {
-					var material = new THREE.SpriteCanvasMaterial( {
-						color: Math.random() * 0x808008 + 0x808080,
-						program: program
-					} );
-					particle = new THREE.Sprite(material);
-					//					particle.position.set(0,0,0);//位置
-					particle.position.x = Math.random() * 2000 - 1000;
-					particle.position.y = Math.random() * 2000 - 1000;
-					particle.position.z = Math.random() * 2000 - 1000;
-					particle.scale.x = particle.scale.y = Math.random() * 20 + 10;//大きさ
-					group.add(particle);
-				}
-
-
-				//表示
+				var line = new THREE.Line(geometry, material);
+				
+				scene.add(line);
+				
 				renderer = new THREE.CanvasRenderer();
 				renderer.setPixelRatio(window.devicePixelRatio);//解像度
 				renderer.setSize(window.innerWidth/2, window.innerHeight/2);//画面の大きさ
-				renderer.setClearColor(0xefefef);
+				//				renderer.setClearColor(0xefefef);
 
 
 				container.appendChild(renderer.domElement);
