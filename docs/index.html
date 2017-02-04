@@ -5,48 +5,61 @@
 		<title>Three.js Practice</title>
 	</head>
 	<body>
-		<div id="stage"></div>
+
+
 		<script src="js/three.min.js"></script>
+				<script src="js/renderers/Projector.js"></script>
+		<script src="js/renderers/CanvasRenderer.js"></script>
+		<script src="js/libs/stats.min.js"></script>
+
+
 		<script>
-			(function(){
-				'use stric';
+			//本体を表示する場所を設置
+			var container;
+			var camera, scene, renderer, group, particle;
+			var box;//mesh
 
-				var scene;
-				var box;//mesh
-				var camera;
-				var renderer;
-				var width = 500;
-				var height = 250;
 
-				//scene ステージ
+
+			init();
+
+			function init(){
+				container = document.createElement('div');
+				document.body.appendChild(container);
+
+				//カメラを初期化
+				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 3000 );
+				camera.position.z = 1000;
+
+				//シーンを初期化
 				scene = new THREE.Scene();
 
-				//mesh 物体
-				// - geometry
-				// - material 材質
+				//boxが表示できるかテスト
 				box = new THREE.Mesh(
 					new THREE.BoxGeometry(50,50,50),
 					new THREE.MeshLambertMaterial({color:0xff0000})
 				);
 				box.position.set(0,0,0);
-				scene.add(box);
+				scene.add(box);//シーンへ追加
+				//1000個のパーティクルを生成する
 
-				// camera
-				camera = new THREE.PerspectiveCamera(45, width/height,1,1000);
+
+				//表示
+				renderer = new THREE.CanvasRenderer();
+				renderer.setPixelRatio(window.devicePixelRatio);//解像度
+				renderer.setSize(window.innerWidth/2, window.innerHeight/2);//画面の大きさ
+				renderer.setClearColor(0xefefef);
+
+
+				container.appendChild(renderer.domElement);
+
+				//renderer
 				camera.position.set(200,100,300);
 				camera.lookAt(scene.position);
 
-
-				//renderer
-				renderer = new THREE.WebGLRenderer({ antialias: true});
-				renderer.setSize(width, height);
-				renderer.setClearColor(0xefefef);
-				renderer.setPixelRatio(window.devicePixelRatio);
-				document.getElementById('stage').appendChild(renderer.domElement);
-
 				renderer.render(scene,camera);
+			}
 
-			})();
 		</script>
 
 	</body>
