@@ -8,7 +8,7 @@
 
 
 		<script src="js/three.min.js"></script>
-				<script src="js/renderers/Projector.js"></script>
+		<script src="js/renderers/Projector.js"></script>
 		<script src="js/renderers/CanvasRenderer.js"></script>
 		<script src="js/libs/stats.min.js"></script>
 
@@ -40,8 +40,31 @@
 					new THREE.MeshLambertMaterial({color:0xff0000})
 				);
 				box.position.set(0,0,0);
-				scene.add(box);//シーンへ追加
+				//				scene.add(box);//シーンへ追加
+
 				//1000個のパーティクルを生成する
+				group = new THREE.Group();
+				scene.add(group);//シーンへ追加
+
+				var program = function ( context ) {
+					context.beginPath();
+					context.arc( 0, 0, 0.5, 0, Math.PI*2, true );
+					context.fill();
+				};
+
+				for ( var i = 0; i < 1000; i++ ) {
+					var material = new THREE.SpriteCanvasMaterial( {
+						color: Math.random() * 0x808008 + 0x808080,
+						program: program
+					} );
+					particle = new THREE.Sprite(material);
+					//					particle.position.set(0,0,0);//位置
+					particle.position.x = Math.random() * 2000 - 1000;
+					particle.position.y = Math.random() * 2000 - 1000;
+					particle.position.z = Math.random() * 2000 - 1000;
+					particle.scale.x = particle.scale.y = Math.random() * 20 + 10;//大きさ
+					group.add(particle);
+				}
 
 
 				//表示
