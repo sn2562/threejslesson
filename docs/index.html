@@ -3,67 +3,168 @@
 	<head>
 		<meta charset="utf-8">
 		<title>Three.js Practice</title>
-	</head>
-	<body>
 
-
+		<script   src="https://code.jquery.com/jquery-3.1.1.min.js"   integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="   crossorigin="anonymous"></script>
+		<script src="js/three.min.js"></script>
 		<script src="js/three.min.js"></script>
 		<script src="js/renderers/Projector.js"></script>
 		<script src="js/renderers/CanvasRenderer.js"></script>
 		<script src="js/libs/stats.min.js"></script>
 
+		<style type="text/css">
+			body{
+				margin: 0px;
+			}
+		</style>
 
+	</head>
+
+	<body>
 		<script>
-			//本体を表示する場所を設置
+			var dataPath = 'data/test.pcd';
+			var width=640*1.2;//画像の解像度
+			var height=480*1.2;//画像の解像度
+			//			var width  = window.innerWidth
+			//			var height = window.innerHeight
+
+			//デプスと色情報
+			var depthData=[];
+
+			//本体を表示する場所を設置material 
 			var container;
 			var camera, scene, renderer, group, particle;
-			var box;//mesh
-			var lines;//material
-
-
+			var mesh;
 
 			init();
+			animate();
 
+			//PCDの読み込み
 			function init(){
+				$.ajax({
+					url:dataPath,
+					success: function(data){
+						var data = data.split(/\r\n|\r|\n/);// 行ごとに分割
+						//PCDは10行目から
+						for(var i=10;i<data.length;i++){
+							var row = [];
+							for(var x of data[i].split(' ')){
+								//string型からfloat型にキャストして値を追加
+								row.push(parseFloat(x));
+							}
+							depthData.push(row);//数値に直した結果をデプスデータに追加
+						}
+					}
+				}).done(function(){
+					ready();
+				});
+			}
+
+			function ready(){
 				container = document.createElement('div');
 				document.body.appendChild(container);
 
 				//カメラを初期化
-				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 3000 );
-				camera.position.z = 1000;
+				camera = new THREE.PerspectiveCamera(45, width/height, 10, 150000);
+				camera.position.x = width/2;
+				camera.position.y = height/2;
+				camera.position.z = (height/2)/Math.tan(Math.PI/8);
+				camera.lookAt(new THREE.Vector3(width/2,height/2,0));
+				camera.up = new THREE.Vector3( 0, 1, 0 );
+
+
+
+
+
 
 				//シーンを初期化
 				scene = new THREE.Scene();
 
+				//box
+				geometry = new THREE.CubeGeometry(200, 200, 200);
+				material = new THREE.MeshBasicMaterial({
+					color: 0xff0000,
+					wireframe: true
+				});
 
+				mesh = new THREE.Mesh(geometry, material);
+				scene.add(mesh);
+
+
+
+
+
+				//This will add a starfield to the background of a scene
+				var starsGeometry = new THREE.Geometry();
+
+				for ( var i = 0; i < 10000; i ++ ) {
+
+					var star = new THREE.Vector3();
+					star.x = THREE.Math.randFloatSpread( 2000 );
+					star.y = THREE.Math.randFloatSpread( 2000 );
+					star.z = THREE.Math.randFloatSpread( 2000 );
+
+					starsGeometry.vertices.push( star )
+
+				}
+
+				var starsMaterial = new THREE.PointsMaterial( { color: 0x888888 } )
+
+				var starField = new THREE.Points( starsGeometry, starsMaterial );
+
+				scene.add( starField );
+
+				drawAxis();
+
+
+				renderer = new THREE.CanvasRenderer();
+				//				renderer.setPixelRatio(window.devicePixelRatio);//解像度
+				renderer.setSize(width, height);//画面の大きさ
+				renderer.setClearColor(0xefefef);
+
+
+				container.appendChild(renderer.domElement);
+
+				render();
+			}
+
+			function drawAxis(){
 				// line
 				//create a blue LineBasicMaterial
 				var material = new THREE.LineBasicMaterial({ color: 0x0000ff });
 
 				var geometry = new THREE.Geometry();
-				
-				geometry.vertices.push(new THREE.Vector3(-10, 0, 0));
-				geometry.vertices.push(new THREE.Vector3(0, 10, 0));
-				geometry.vertices.push(new THREE.Vector3(10, 0, 0));
+
+				var lineLenght = 10000;
+				geometry.vertices.push(new THREE.Vector3(0, 0, 0));
+				geometry.vertices.push(new THREE.Vector3(lineLenght, 0, 0));
+				geometry.vertices.push(new THREE.Vector3(0, 0, 0));
+				geometry.vertices.push(new THREE.Vector3(0, lineLenght, 0));
+				geometry.vertices.push(new THREE.Vector3(0, 0, 0));
+				geometry.vertices.push(new THREE.Vector3(0, 0, lineLenght));
 
 				var line = new THREE.Line(geometry, material);
-				
+
 				scene.add(line);
-				
-				renderer = new THREE.CanvasRenderer();
-				renderer.setPixelRatio(window.devicePixelRatio);//解像度
-				renderer.setSize(window.innerWidth/2, window.innerHeight/2);//画面の大きさ
-				//				renderer.setClearColor(0xefefef);
+			}
 
-
-				container.appendChild(renderer.domElement);
-
+			function render() {
 				//renderer
-				camera.position.set(200,100,300);
-				camera.lookAt(scene.position);
-
+				//				camera.lookAt(scene.position);
 				renderer.render(scene,camera);
 			}
+
+			function animate() {
+
+				// note: three.js includes requestAnimationFrame shim
+				requestAnimationFrame(animate);
+
+				mesh.rotation.x += 0.01;
+				mesh.rotation.y += 0.02;
+
+				renderer.render(scene, camera);
+
+			}
+
 
 		</script>
 
