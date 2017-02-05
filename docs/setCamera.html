@@ -6,6 +6,7 @@
 
 		<script   src="https://code.jquery.com/jquery-3.1.1.min.js"   integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="   crossorigin="anonymous"></script>
 		<script src="js/three.min.js"></script>
+		<script src="js/three.min.js"></script>
 		<script src="js/renderers/Projector.js"></script>
 		<script src="js/renderers/CanvasRenderer.js"></script>
 		<script src="js/libs/stats.min.js"></script>
@@ -20,7 +21,7 @@
 
 	<body>
 		<script>
-			var dataPath = 'data/PointCroudData.pcd';
+			var dataPath = 'data/test.pcd';
 			var width=640*1.2;//画像の解像度
 			var height=480*1.2;//画像の解像度
 			//			var width  = window.innerWidth
@@ -68,7 +69,10 @@
 				camera.position.y = height/2;
 				camera.position.z = (height/2)/Math.tan(Math.PI/8);
 				camera.lookAt(new THREE.Vector3(width/2,height/2,0));
-				//				camera.up.set( 0, 1, 0 );
+				camera.up = new THREE.Vector3( 0, 1, 0 );
+
+
+
 
 
 
@@ -86,37 +90,34 @@
 				scene.add(mesh);
 
 
-				//particle
-				// Objects
-				var circleTexture   = new THREE.TextureLoader().load('https://dl.dropboxusercontent.com/u/873331/Projects/threejs/circle.png');
-				var triangleTexture = new THREE.TextureLoader().load('https://dl.dropboxusercontent.com/u/873331/Projects/threejs/triangle.png');
-				var parameters = {
-					square: { size: 10, color:0x00ffff, blending: THREE.NoBlending },
-					circle: { size: 10, color:0xf5f5f5, map: circleTexture, blending: THREE.NormalBlending, transparent: true, alphaTest: 0.9 },
-					triangle: { size: 10, color:0xffff00, map: triangleTexture, blending: THREE.NormalBlending, transparent: true, alphaTest: 0.9 }
-				};
 
-				var squaresGeometry = createGeometry(800);
-				var squaresMaterial = new THREE.PointsMaterial(parameters.square);
-				var squares         = new THREE.Points(squaresGeometry, squaresMaterial);
 
-				var trianglesGeometry = createGeometry(1000);
-				var trianglesMaterial = new THREE.PointsMaterial(parameters.triangle);
-				var triangles         = new THREE.Points(trianglesGeometry, trianglesMaterial);
 
-				var circlesGeometry = createGeometry(300);
-				var circlesMaterial = new THREE.PointsMaterial(parameters.circle);
-				var circles         = new THREE.Points(circlesGeometry, circlesMaterial);
+				//This will add a starfield to the background of a scene
+				var starsGeometry = new THREE.Geometry();
 
-				scene.add(squares)
-//					, circles, triangles);
+				for ( var i = 0; i < 10000; i ++ ) {
 
+					var star = new THREE.Vector3();
+					star.x = THREE.Math.randFloatSpread( 2000 );
+					star.y = THREE.Math.randFloatSpread( 2000 );
+					star.z = THREE.Math.randFloatSpread( 2000 );
+
+					starsGeometry.vertices.push( star )
+
+				}
+
+				var starsMaterial = new THREE.PointsMaterial( { color: 0x888888 } )
+
+				var starField = new THREE.Points( starsGeometry, starsMaterial );
+
+				scene.add( starField );
 
 				drawAxis();
 
 
 				renderer = new THREE.CanvasRenderer();
-				renderer.setPixelRatio(window.devicePixelRatio);//解像度
+				//				renderer.setPixelRatio(window.devicePixelRatio);//解像度
 				renderer.setSize(width, height);//画面の大きさ
 				renderer.setClearColor(0xefefef);
 
@@ -124,22 +125,6 @@
 				container.appendChild(renderer.domElement);
 
 				render();
-			}
-
-			//数を引数にとりランダムな位置のジオメトリを生成
-			function createGeometry(count) {
-				var geometry = new THREE.Geometry();
-
-				for (var i = 0; i < count; i++) {
-					var x = Math.random() * 10 - 5;
-					var y = Math.random() * 10 - 5;
-					var z = Math.random() * 10 - 5;
-					var particle = new THREE.Vector3(x, y, z);
-					particle.velocity = new THREE.Vector3(0, -Math.random(), 0);
-					geometry.vertices.push(particle);
-				}
-
-				return geometry;
 			}
 
 			function drawAxis(){
