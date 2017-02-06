@@ -136,21 +136,10 @@
 
 					for(var value of depthData) {
 						var x = Math.random() * 1000 - 500;
-//						console.log(value,x);
 						var particle = new THREE.Vector3(value[0],value[1],value[2]);
 						particle.velocity = new THREE.Vector3(0, -Math.random(), 0);
 						geometry.vertices.push(particle);
 					}
-
-					//					for (var i = 0; i < depthData.length; i++) {
-					//						var x = Math.random() * 1000 - 500;
-					//						var y = Math.random() * 1000 - 500;
-					//						var z = Math.random() * 1000 - 500;
-					//						var particle = new THREE.Vector3(x, y, z);
-					//						particle.velocity = new THREE.Vector3(0, -Math.random(), 0);
-					//						geometry.vertices.push(particle);
-					//					}
-
 					return geometry;
 				}
 
