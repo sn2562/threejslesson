@@ -36,6 +36,8 @@
 			//PCD
 			//			var dataPath = 'data/test.pcd';
 			var dataPath = 'data/PointCroudData2.pcd';
+			var depthData=[];
+			var colors =[];
 
 
 			//constract
@@ -45,11 +47,14 @@
 			var z0 = (height/2)/Math.tan(Math.PI/8);
 
 
+
+
 			var dgeometry = null;
 			var dmaterial = null;
 			var group = null;
 
-			var depthData = {
+
+			var json = {
 				"points": 0,
 				"vertices": [],
 				"colors": []
@@ -74,6 +79,7 @@
 
 
 				// Camera
+
 				var camera = new THREE.PerspectiveCamera(45, width/height, 10, 150000);
 				camera.position.set(0,0,z0);
 
@@ -81,7 +87,7 @@
 				drawAxis();
 
 
-				//Test Objects
+				// Objects
 				var circleTexture   = new THREE.TextureLoader().load('https://dl.dropboxusercontent.com/u/873331/Projects/threejs/circle.png');
 				var triangleTexture = new THREE.TextureLoader().load('https://dl.dropboxusercontent.com/u/873331/Projects/threejs/triangle.png');
 				var parameters = {
@@ -90,20 +96,48 @@
 					triangle: { size: 10, color:0xffff00, map: triangleTexture, blending: THREE.NormalBlending, transparent: true, alphaTest: 0.9 }
 				};
 
+				var squaresGeometry = createGeometry(100);
+				var squaresMaterial = new THREE.PointsMaterial(parameters.square);
+				var squares         = new THREE.Points(squaresGeometry, squaresMaterial);
+
+				var trianglesGeometry = createGeometry(100);
+				var trianglesMaterial = new THREE.PointsMaterial(parameters.triangle);
+				var triangles         = new THREE.Points(trianglesGeometry, trianglesMaterial);
+
+				var circlesGeometry = createGeometry(100);
+				var circlesMaterial = new THREE.PointsMaterial(parameters.circle);
+				var circles         = new THREE.Points(circlesGeometry, circlesMaterial);
+
+				//				scene.add(squares, circles, triangles);
+
 				//Depth Objects
+				//ジオメトリの作成
+				var depthGeometry = createDepthGeometry();
+				console.log("colors.length",colors.length);
+				depthGeometry.colors = colors;
+
+				//マテリアルの作成
+				var depthMaterial = new THREE.PointsMaterial({
+					size: 10,
+					vertexColors: true
+				});
+				var depth = new THREE.Points(depthGeometry, depthMaterial);
+
+//				scene.add(depth);
+
+
+				//Depth Object その2
 				group = new THREE.Object3D();
 				dgeometry = new THREE.Geometry();
 				dgeometry.dynamic = true;
-				dgeometry.colors = depthData.colors;
-				dgeometry.vertices = depthData.vertices;
+				dgeometry.colors = json.colors;
+				dgeometry.vertices = json.vertices;
 				var dmaterial = new THREE.PointsMaterial({
 					size: 10,
 					vertexColors: true
 				});
 				particles = new THREE.Points(dgeometry, dmaterial);
 				group.add(particles);
-				
-				
 				scene.add(group);
 
 
@@ -143,6 +177,18 @@
 				}
 
 				function render() {
+					squares.rotation.x += .001;
+					squares.rotation.y += .0003;
+					squares.rotation.z += .0001;
+
+					circles.rotation.x += .001;
+					circles.rotation.y += .0003;
+					circles.rotation.z += .0001;
+
+					triangles.rotation.x -= .0001;
+					triangles.rotation.y -= .0002;
+					triangles.rotation.z -= .001;
+
 					renderer.render(scene, camera);
 				}
 
@@ -164,6 +210,26 @@
 						geometry.vertices.push(particle);
 					}
 					return geometry;
+				}
+
+				function createDepthGeometry() {
+					var geometry = new THREE.Geometry();
+
+					for(var value of depthData) {
+						//軸の方向を加味して位置を移動
+						var particle = new THREE.Vector3(value[0],value[1],value[2]);
+						particle.velocity = new THREE.Vector3(0, -Math.random(), 0);
+						geometry.vertices.push(particle);
+					}
+					return geometry;
+				}
+				function createDepthMaterial() {
+					var material;
+					new THREE.PointsMaterial({
+						color: 0xffffff,
+						size: 10
+					});
+					return material;
 				}
 
 				//座標系
@@ -230,8 +296,11 @@
 
 						case 17: // Ctrl
 							break;
+
 					}
+
 				});
+
 			};
 
 			//PCDの読み込み
@@ -252,13 +321,28 @@
 								}else if(j==2){
 									//z座標
 									row.push(parseFloat(d[j])*-1+z0);
-								}else{
-									//色情報
-									var c = new THREE.Color(parseInt(d[j]));// color 10進数
-									depthData.colors.push(c);
+								}else{//色情報
+									var c1 = parseInt(d[j]);// color 10進数
+									//									row.push(c1);
+									colors.push(c1);
+
+									//rgb値をそれぞれ取り出して変換
+									//									console.log(typeof d[j]);
+									var c2 = new THREE.Color(c1);
+									//									var x = d[j].substring(2,4);
+									//									var red   = parseInt(x, 16);
+									//									var green = parseInt(d[j].substring(4,6), 16);
+									//									var blue  = parseInt(d[j].substring(6,8), 16);
+									//									c2.setRGB(red,green,blue);
+									json.colors.push(c2);
 								}
 							}
-							depthData.vertices.push(new THREE.Vector3(row[0],row[1],row[2]));
+							//							for(var x of data[i].split(' ')){
+							//								//string型からfloat型にキャストして値を追加
+							//								row.push(parseFloat(x));
+							//							}
+							depthData.push(row);//数値に直した結果をデプスデータに追加
+							json.vertices.push(new THREE.Vector3(row[0],row[1],row[2]));
 						}
 					}
 				}).done(function(){
