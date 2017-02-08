@@ -83,15 +83,6 @@
 				drawAxis();
 
 
-				//Test Objects
-				var circleTexture   = new THREE.TextureLoader().load('https://dl.dropboxusercontent.com/u/873331/Projects/threejs/circle.png');
-				var triangleTexture = new THREE.TextureLoader().load('https://dl.dropboxusercontent.com/u/873331/Projects/threejs/triangle.png');
-				var parameters = {
-					square: { size: 10, color:0x00ffff, blending: THREE.NoBlending },
-					circle: { size: 10, color:0xf5f5f5, map: circleTexture, blending: THREE.NormalBlending, transparent: true, alphaTest: 0.9 },
-					triangle: { size: 10, color:0xffff00, map: triangleTexture, blending: THREE.NormalBlending, transparent: true, alphaTest: 0.9 }
-				};
-
 				//Depth Objects
 				group = new THREE.Object3D();
 				dgeometry = new THREE.Geometry();
@@ -103,7 +94,7 @@
 					vertexColors: true
 				});
 				particles = new THREE.Points(dgeometry, dmaterial);
-				group.add(particles);
+//				group.add(particles);
 
 				//Test Line Objects 2
 
@@ -183,7 +174,7 @@
 				parent_node = new THREE.Object3D();
 				parent_node.add(mesh);
 
-				scene.add( parent_node );
+				group.add( parent_node );
 
 
 
