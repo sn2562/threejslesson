@@ -1,100 +1,65 @@
-/**
- * Particles.js
- */
+// non-indexed buffer geometry
+var geometry = new THREE.BufferGeometry();
 
-var init = function() {
+// number of triangles
+var NUM_TRIANGLES = 10;
 
-	// DOM
-	var container = document.getElementById('container');
+// attributes
+var positions = new Float32Array( NUM_TRIANGLES * 3 * 3 );
+var normals   = new Float32Array( NUM_TRIANGLES * 3 * 3 );
+var colors    = new Float32Array( NUM_TRIANGLES * 3 * 3 );
+var uvs       = new Float32Array( NUM_TRIANGLES * 3 * 2 );
 
-	// Scene
-	var scene = new THREE.Scene();
+var color = new THREE.Color();
+var scale = 15;
+var size = 5;
+var x, y, z;
 
-	// Camera
-	var width  = window.innerWidth;
-	var height = window.innerHeight;
-	var fov    = 60;
-	var aspect = width / height;
-	var near   = 1;
-	var far    = 500;
-	var camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-	camera.position.set(0, 0, 50);
+for ( var i = 0, l = NUM_TRIANGLES * 3; i < l; i ++ ) {
 
-	// Objects
-	var circleTexture   = new THREE.TextureLoader().load('https://dl.dropboxusercontent.com/u/873331/Projects/threejs/circle.png');
-	var triangleTexture = new THREE.TextureLoader().load('https://dl.dropboxusercontent.com/u/873331/Projects/threejs/triangle.png');
-	var parameters = {
-		square: { size: 10, color:0x00ffff, blending: THREE.NoBlending },
-		circle: { size: 10, color:0xf5f5f5, map: circleTexture, blending: THREE.NormalBlending, transparent: true, alphaTest: 0.9 },
-		triangle: { size: 10, color:0xffff00, map: triangleTexture, blending: THREE.NormalBlending, transparent: true, alphaTest: 0.9 }
-	};
+	if ( i % 3 === 0 ) {
 
-	var squaresGeometry = createGeometry(800);
-	var squaresMaterial = new THREE.PointsMaterial(parameters.square);
-	var squares         = new THREE.Points(squaresGeometry, squaresMaterial);
+		x = ( Math.random() - 0.5 ) * scale;
+		y = ( Math.random() - 0.5 ) * scale;
+		z = ( Math.random() - 0.5 ) * scale;
 
-	var trianglesGeometry = createGeometry(1000);
-	var trianglesMaterial = new THREE.PointsMaterial(parameters.triangle);
-	var triangles         = new THREE.Points(trianglesGeometry, trianglesMaterial);
+	} else {
 
-	var circlesGeometry = createGeometry(300);
-	var circlesMaterial = new THREE.PointsMaterial(parameters.circle);
-	var circles         = new THREE.Points(circlesGeometry, circlesMaterial);
+		x = x + size * ( Math.random() - 0.5 );
+		y = y + size * ( Math.random() - 0.5 );
+		z = z + size * ( Math.random() - 0.5 );
 
-	scene.add(squares, circles, triangles);
-
-	// Renderer
-	var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-	renderer.setSize(width, height);
-	renderer.setClearColor(0xffffff, 0);
-	renderer.setPixelRatio(window.devicePixelRatio);
-	container.appendChild(renderer.domElement);
-
-	animate();
-
-	function animate() {
-		requestAnimationFrame(animate);
-		render();
 	}
 
-	function render() {
-		squares.rotation.x += .001;
-		squares.rotation.y += .0003;
-		squares.rotation.z += .0001;
+	var index = 3 * i;
 
-		circles.rotation.x += .001;
-		circles.rotation.y += .0003;
-		circles.rotation.z += .0001;
+	// positions
+	positions[ index     ] = x;
+	positions[ index + 1 ] = y;
+	positions[ index + 2 ] = z;
 
-		triangles.rotation.x -= .0001;
-		triangles.rotation.y -= .0002;
-		triangles.rotation.z -= .001;
+	//normals -- we will set normals later
 
-		renderer.render(scene, camera);
-	}
+	// colors
+	color.setHSL( i / l, 1.0, 0.5 );
+	colors[ index     ] = color.r;
+	colors[ index + 1 ] = color.g;
+	colors[ index + 2 ] = color.b;
 
-	function resize() {
-		camera.updateProjectionMatrix();
-		renderer.setSize(window.innerWidth, window.innerHeight);
-	}
+	// uvs
+	uvs[ index     ] = Math.random(); // just something...
+	uvs[ index + 1 ] = Math.random();
 
-	function createGeometry(count) {
-		var geometry = new THREE.Geometry();
+}
 
-		for (var i = 0; i < count; i++) {
-			var x = Math.random() * 1000 - 500;
-			var y = Math.random() * 1000 - 500;
-			var z = Math.random() * 1000 - 500;
-			var particle = new THREE.Vector3(x, y, z);
-			particle.velocity = new THREE.Vector3(0, -Math.random(), 0);
-			geometry.vertices.push(particle);
-		}
+geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+geometry.addAttribute( 'normal', new THREE.BufferAttribute( normals, 3 ) );
+geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
+geometry.addAttribute( 'uv', new THREE.BufferAttribute( uvs, 2 ) );
 
-		return geometry;
-	}
+// optional
+geometry.computeBoundingBox();
+geometry.computeBoundingSphere();
 
-	window.addEventListener('resize', resize, false);
-};
-
-window.addEventListener('load', init, false);
-
+// set the normals
+geometry.computeVertexNormals(); // computed vertex normals are orthogonal to the face for non-indexed BufferGeometry
