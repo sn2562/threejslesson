@@ -6,9 +6,8 @@
 
 		<script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="   crossorigin="anonymous"></script>
 		<script src="js/three.min.js"></script>
+		<script type="text/javascript" src="js/Octree.js"></script>
 		<script src="js/renderers/Projector.js"></script>	
-		<!--		<script src="js/controls/OrbitControls.js"></script>-->
-		<!--		<script src="js/controls/TransformControls.js"></script>-->
 		<script src="js/controls/TrackballControls.js"></script>
 		<script src="js/renderers/CanvasRenderer.js"></script>
 		<script src="js/libs/stats.min.js"></script>
@@ -16,34 +15,21 @@
 	</head>
 	<body>
 		<script>
-			//test area
-			//			console.log("hex ",parseInt("0x00ffff"));
-			//			console.log("hex ",parseInt("00ffff"));
-			//				//test area
-			//				
-			//				console.log("0x00ffff");
-			//				console.log(0x00ffff);
-
-			//string型からfloat型にキャストして値を追加
-			console.log(parseInt("0xC9CCCD"));
-
 			//DOM
 			var container;
 
 			//操作
 			var controls;
+			var octree;
 
 			//PCD
-			//			var dataPath = 'data/test.pcd';
 			var dataPath = 'data/PointCroudData2.pcd';
 
-
 			//constract
-			var zoom = 1.6;
+			var zoom = 0.8;
 			var width=640*zoom;
 			var height=480*zoom;
 			var z0 = (height/2)/Math.tan(Math.PI/8);
-
 
 			var dgeometry = null;
 			var dmaterial = null;
@@ -54,13 +40,6 @@
 				"vertices": [],
 				"colors": []
 			};
-
-
-
-
-			/**
- * Particles.js
- */
 
 			function ready(){
 
@@ -76,6 +55,24 @@
 				// Camera
 				var camera = new THREE.PerspectiveCamera(45, width/height, 10, 150000);
 				camera.position.set(0,0,z0);
+
+				// create octree
+
+				octree = new THREE.Octree( {
+					// uncomment below to see the octree (may kill the fps)
+					//scene: scene,
+					// when undeferred = true, objects are inserted immediately
+					// instead of being deferred until next octree.update() call
+					// this may decrease performance as it forces a matrix update
+					undeferred: false,
+					// set the max depth of tree
+					depthMax: Infinity,
+					// max number of objects before nodes split or merge
+					objectsThreshold: 8,
+					// percent between 0 and 1 that nodes will overlap each other
+					// helps insert objects that lie over more than one node
+					overlapPct: 0.15
+				} );
 
 				//Axis
 				drawAxis();
@@ -102,8 +99,8 @@
 				});
 				particles = new THREE.Points(dgeometry, dmaterial);
 				group.add(particles);
-				
-				
+
+
 				scene.add(group);
 
 
@@ -129,9 +126,7 @@
 				controls.staticMoving = true;
 				controls.dynamicDampingFactor = 0.3;
 
-
 				controls.keys = [ 65, 83, 68 ];
-
 				controls.addEventListener( 'change', render );
 
 				animate();
@@ -235,7 +230,8 @@
 			};
 
 			//PCDの読み込み
-			function init(){
+			function init_save(){
+				//読み込み処理が全部終わったら続く処理を行う
 				$.ajax({
 					url:dataPath,
 					success: function(data){
@@ -265,10 +261,72 @@
 					ready();
 				});
 			}
+			function init(){
+				//読み込みの実行
+				var path = [
+					'data/PointCroudData.pcd',
+					'data/Sketch.txt'
+				];
+
+				var dataList = [];
+
+				console.log("path.length",path.length);
+				for (var i = 0; i <= path.length; i++) {
+					dataList.push($.ajax({ // $.ajaxの戻り値をdataList配列に格納
+						url: path[i]
+					}));
+				}
+				//読み込み終了後の処理
+				$.when.apply($, dataList).done(function () {
+					// 結果は仮引数に可変長で入る **順番は保証されている**
+					// 取り出すには arguments から取り出す
+					// argumentsはそれぞれ [data, textStatus, jqXHR] の配列になっている
+
+					//全てを取り出す
+					//					for (var i = 0; i < arguments.length-1; i++) {
+					//						var result = arguments[i];
+					//						console.log(i,result[0]);//data
+					//						//						console.log(i,result[1]);//textStatus
+					//						//						console.log(i,result[3]);jqXHR
+					//						console.log("test",i);
+					//					}
+
+					//それぞれについて処理する 0番目はPCD,1番目はsketchデータ
+					persePCD(arguments[0][0]);//デプスデータの準備
+					perseSketchData(arguments[1][0]);//スケッチデータの準備
+					ready();//描画
+				});
+			}
+
+			function persePCD(data){
+				console.log(data);
+				var data = data.split(/\r\n|\r|\n/);// 行ごとに分割
+				//PCDは10行目から
+				for(var i=10;i<data.length;i++){
+					var row = [];
+					var d = data[i].split(' ');
+					//							console.log(d);
+					for(var j=0 ; j<4 ; j++){
+						if(j<2){//座標情報
+							//xy座標
+							row.push(parseFloat(d[j]));
+						}else if(j==2){
+							//z座標
+							row.push(parseFloat(d[j])*-1+z0);
+						}else{
+							//色情報
+							var c = new THREE.Color(parseInt(d[j]));// color 10進数
+							depthData.colors.push(c);
+						}
+					}
+					depthData.vertices.push(new THREE.Vector3(row[0],row[1],row[2]));
+				}
+			}
+			function perseSketchData(data){
+
+			}
+			//HTMLが読み込まれたら実行
 			window.addEventListener('load', init, false);
-
-
 		</script>
-
 	</body>
 </html>
