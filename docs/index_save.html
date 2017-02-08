@@ -11,6 +11,7 @@
 		<script src="js/controls/TrackballControls.js"></script>
 		<script src="js/renderers/CanvasRenderer.js"></script>
 		<script src="js/libs/stats.min.js"></script>
+		<!--		<script src="js/geometries/hilbert3D.js"></script>-->
 
 	</head>
 	<body>
@@ -23,6 +24,7 @@
 			var octree;
 
 			//PCD
+			var dataPath = 'data/PointCroudData2.pcd';
 
 			//constract
 			var zoom = 0.8;
@@ -30,8 +32,8 @@
 			var height=480*zoom;
 			var z0 = (height/2)/Math.tan(Math.PI/8);
 
-			var dgeometry = null;
-			var dmaterial = null;
+			var depthGeometry = null;
+			var depthMaterial = null;
 			var group = null;
 
 			var depthData = {
@@ -46,23 +48,110 @@
 				"lineWidth":[]
 			};
 
-			function ready(){
 
+			function persePCD(data){
+				//デプスデータの処理
+				//形式 PCDを参照
+
+				data = data.split(/\r\n|\r|\n/);// 行ごとに分割
+				//PCDは10行目から
+				for(var i=10;i<data.length;i++){
+					var d = data[i].split(' ');
+
+					//色情報
+					var c = new THREE.Color(parseInt(d[3]));// color 10進数
+					depthData.colors.push(c);
+
+					//座標情報
+					var px = parseFloat(d[0]);
+					var py = parseFloat(d[1]);
+					var pz = parseFloat(d[2]*-1+z0);
+					var p = new THREE.Vector3(px,py,pz);
+
+				}
+				depthData.points = depthData.colors.length;
+			}
+
+			function perseSketchData(data){
+				//スケッチデータの処理
+				//形式 1行ストローク [色 太さ P1座標 P1座標 P2座標 P3座標...]
+				data = data.split(/\r\n|\r|\n/);// 行ごとに分割
+				for(var i=0;i<data.length;i++){
+					var d = data[i].split(' ');
+
+					//色
+					var c = new THREE.Color(parseInt(d[0]));// color 10進数
+					sketchData.colors.push(c);
+
+					//線の太さ
+					var w = parseInt(d[1]);// 太さ情報
+					sketchData.lineWidth.push(w);
+					var points = [];
+
+					//座標情報
+					for(var j=2 ; j<d.length ; j=j+3){
+						var px = parseFloat(d[j]);
+						var py = parseFloat(d[j+1]);
+						var pz = parseFloat(d[j+2]*-1+z0);
+						var p = new THREE.Vector3(px,py,pz);
+						points.push(p);
+					}
+					sketchData.vertices.push(points);
+				}
+				sketchData.lines = sketchData.colors.length;
+			}
+
+			function init(){
+				//読み込みの実行
+				var path = [
+					'data/PointCroudData.pcd',
+					'data/Sketch.txt'
+				];
+
+				var dataList = [];
+
+				console.log("path.length",path.length);
+				for (var i = 0; i <= path.length; i++) {
+					dataList.push($.ajax({ // $.ajaxの戻り値をdataList配列に格納
+						url: path[i]
+					}));
+				}
+				//読み込み終了後の処理
+				$.when.apply($, dataList).done(function () {
+					// 結果は仮引数に可変長で入る **順番は保証されている**
+					// 取り出すには arguments から取り出す
+					// argumentsはそれぞれ [data, textStatus, jqXHR] の配列になっている
+
+					//全てを取り出す
+					//					for (var i = 0; i < arguments.length-1; i++) {
+					//						var result = arguments[i];
+					//						console.log(i,result[0]);//data
+					//						//						console.log(i,result[1]);//textStatus
+					//						//						console.log(i,result[3]);jqXHR
+					//						console.log("test",i);
+					//					}
+
+					//それぞれについて処理する 0番目はPCD,1番目はsketchデータ
+					persePCD(arguments[0][0]);//デプスデータの準備
+					perseSketchData(arguments[1][0]);//スケッチデータの準備
+					ready();//描画
+				});
+			}
+
+
+			function ready(){
 				// DOM
 				container = document.createElement('div');
 				document.body.appendChild(container);
 
-
 				// Scene
 				var scene = new THREE.Scene();
-
 
 				// Camera
 				var camera = new THREE.PerspectiveCamera(45, width/height, 10, 150000);
 				camera.position.set(0,0,z0);
 
 				// create octree
-
 				octree = new THREE.Octree( {
 					// uncomment below to see the octree (may kill the fps)
 					//scene: scene,
@@ -82,28 +171,23 @@
 				//Axis
 				drawAxis();
 
-
-				//Test Objects
-				var circleTexture   = new THREE.TextureLoader().load('https://dl.dropboxusercontent.com/u/873331/Projects/threejs/circle.png');
-				var triangleTexture = new THREE.TextureLoader().load('https://dl.dropboxusercontent.com/u/873331/Projects/threejs/triangle.png');
-				var parameters = {
-					square: { size: 10, color:0x00ffff, blending: THREE.NoBlending },
-					circle: { size: 10, color:0xf5f5f5, map: circleTexture, blending: THREE.NormalBlending, transparent: true, alphaTest: 0.9 },
-					triangle: { size: 10, color:0xffff00, map: triangleTexture, blending: THREE.NormalBlending, transparent: true, alphaTest: 0.9 }
-				};
+				group = new THREE.Object3D();
 
 				//Depth Objects
-				group = new THREE.Object3D();
-				dgeometry = new THREE.Geometry();
-				dgeometry.dynamic = true;
-				dgeometry.colors = depthData.colors;
-				dgeometry.vertices = depthData.vertices;
-				var dmaterial = new THREE.PointsMaterial({
+				depthGeometry = new THREE.Geometry();
+				depthGeometry.dynamic = true;
+				depthGeometry.colors = depthData.colors;
+				depthGeometry.vertices = depthData.vertices;
+				var depthMaterial = new THREE.PointsMaterial({
 					size: 10,
 					vertexColors: true
 				});
-				particles = new THREE.Points(dgeometry, dmaterial);
+				particles = new THREE.Points(depthGeometry, depthMaterial);
 				group.add(particles);
+
+
+
+
 
 				//Test Line Objects 2
 
@@ -171,6 +255,33 @@
 						);
 					}
 				}
+
+				var y = 0;
+				//一本線
+				snowflake
+				(
+					[
+						new THREE.Vector3(0, y+0, 0),
+						new THREE.Vector3(500, y+0, 0)
+					],
+					false, 600
+				);
+
+				y += 600;
+
+				y += 600;
+				//四角形
+				//３つめは色？
+				snowflake
+				(
+					[
+						new THREE.Vector3(0, y+0, 0),
+						new THREE.Vector3(500, y, 0),
+						new THREE.Vector3(500, y+500, 0),
+						new THREE.Vector3(0, y+500, 0)
+					],
+					true, 600
+				);
 				tgeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );
 				tgeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( positions ), 3 ) );
 				tgeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( colors ), 3 ) );
@@ -187,7 +298,10 @@
 
 
 
-				scene.add(group);
+
+
+
+
 
 
 				// Renderer
@@ -196,8 +310,6 @@
 				renderer.setClearColor(0xffffff, 0);
 				renderer.setPixelRatio(window.devicePixelRatio);
 				container.appendChild(renderer.domElement);
-
-
 
 				//controles
 				controls = new THREE.TrackballControls( camera );
@@ -297,139 +409,18 @@
 							break;
 
 						case 13: //0 reset
-							console.log("controls",controls);
-
 							controls.reset();
 							break;
 					}
-
 				});
 
 				window.addEventListener( 'keyup', function ( event ) {
-
 					switch ( event.keyCode ) {
-
 						case 17: // Ctrl
 							break;
 					}
 				});
 			};
-
-			//PCDの読み込み
-			function init_save(){
-				//読み込み処理が全部終わったら続く処理を行う
-				$.ajax({
-					url:dataPath,
-					success: function(data){
-						var data = data.split(/\r\n|\r|\n/);// 行ごとに分割
-						//PCDは10行目から
-						for(var i=10;i<data.length;i++){
-							var row = [];
-							var d = data[i].split(' ');
-							//							console.log(d);
-							for(var j=0 ; j<4 ; j++){
-								if(j<2){//座標情報
-									//xy座標
-									row.push(parseFloat(d[j]));
-								}else if(j==2){
-									//z座標
-									row.push(parseFloat(d[j])*-1+z0);
-								}else{
-									//色情報
-									var c = new THREE.Color(parseInt(d[j]));// color 10進数
-									depthData.colors.push(c);
-								}
-							}
-							depthData.vertices.push(new THREE.Vector3(row[0],row[1],row[2]));
-						}
-					}
-				}).done(function(){
-					ready();
-				});
-			}
-			function init(){
-				//読み込みの実行
-				var path = [
-					'data/PointCroudData.pcd',
-					'data/Sketch.txt'
-				];
-
-				var dataList = [];
-
-
-				for (var i = 0; i <= path.length; i++) {
-					dataList.push($.ajax({ // $.ajaxの戻り値をdataList配列に格納
-						url: path[i]
-					}));
-				}
-				//読み込み終了後の処理
-				$.when.apply($, dataList).done(function () {
-					// 結果は仮引数に可変長で入る **順番は保証されている**
-					// 取り出すには arguments から取り出す
-					// argumentsはそれぞれ [data, textStatus, jqXHR] の配列になっている
-
-					//全てを取り出す
-					//					for (var i = 0; i < arguments.length-1; i++) {
-					//						var result = arguments[i];
-					//						console.log(i,result[0]);//data
-					//						//						console.log(i,result[1]);//textStatus
-					//						//						console.log(i,result[3]);jqXHR
-					//						console.log("test",i);
-					//					}
-
-					//それぞれについて処理する 0番目はPCD,1番目はsketchデータ
-					persePCD(arguments[0][0]);//デプスデータの準備
-					perseSketchData(arguments[1][0]);//スケッチデータの準備
-					ready();//描画
-				});
-			}
-
-			function persePCD(data){
-				var data = data.split(/\r\n|\r|\n/);// 行ごとに分割
-				//PCDは10行目から
-				for(var i=10;i<data.length;i++){
-					var d = data[i].split(' ');
-
-					//色情報
-					var c = new THREE.Color(parseInt(d[3]));// color 10進数
-					depthData.colors.push(c);
-
-					//座標情報
-					var px = parseFloat(d[0]);
-					var py = parseFloat(d[1]);
-					var pz = parseFloat(d[2]*-1+z0);
-
-					depthData.vertices.push(new THREE.Vector3(px,py,pz));
-				}
-			}
-			function perseSketchData(data){
-				//スケッチデータの処理
-				//形式 1行ストローク [色 太さ P1座標 P1座標 P2座標 P3座標...]
-				data = data.split(/\r\n|\r|\n/);// 行ごとに分割
-				for(var i=0;i<data.length;i++){
-					var d = data[i].split(' ');
-
-					//色
-					var c = new THREE.Color(parseInt(d[0]));// color 10進数
-					sketchData.colors.push(c);
-
-					//線の太さ
-					var w = parseInt(d[1]);// 太さ情報
-					sketchData.lineWidth.push(w);
-					var points = [];
-
-					//座標情報
-					for(var j=2 ; j<d.length ; j=j+3){
-						var px = parseFloat(d[j]);
-						var py = parseFloat(d[j+1]);
-						var pz = parseFloat(d[j+2]*-1+z0);
-						var p = new THREE.Vector3(px,py,pz);
-						points.push(p);
-					}
-					sketchData.vertices.push(points);
-				}
-				sketchData.lines = sketchData.colors.length;
-			}
 
 			//HTMLが読み込まれたら実行
 			window.addEventListener('load', init, false);
