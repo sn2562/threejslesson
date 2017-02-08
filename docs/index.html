@@ -40,6 +40,12 @@
 				"vertices": [],
 				"colors": []
 			};
+			var sketchData = {
+				"lines": 0,
+				"vertices": [],
+				"colors": [],
+				"lineWidth":[]
+			};
 
 			function ready(){
 
@@ -261,6 +267,61 @@
 					ready();
 				});
 			}
+
+
+			function persePCD(data){
+				//デプスデータの処理
+				//形式 PCDを参照
+
+				data = data.split(/\r\n|\r|\n/);// 行ごとに分割
+				//PCDは10行目から
+				for(var i=10;i<data.length;i++){
+					var row = [];
+					var d = data[i].split(' ');
+					for(var j=0 ; j<4 ; j++){
+						if(j<2){//座標情報
+							//xy座標
+							row.push(parseFloat(d[j]));
+						}else if(j==2){
+							//z座標
+							row.push(parseFloat(d[j])*-1+z0);
+						}else{
+							//色情報
+							var c = new THREE.Color(parseInt(d[j]));// color 10進数
+							depthData.colors.push(c);
+						}
+					}
+					depthData.vertices.push(new THREE.Vector3(row[0],row[1],row[2]));
+				}
+				depthData.points = depthData.colors.length;
+			}
+			function perseSketchData(data){
+				//スケッチデータの処理
+				//形式 1行ストローク [色 太さ P1座標 P1座標 P2座標 P3座標...]
+				data = data.split(/\r\n|\r|\n/);// 行ごとに分割
+				for(var i=0;i<data.length;i++){
+					var d = data[i].split(' ');
+
+					//色
+					var c = new THREE.Color(parseInt(d[0]));// color 10進数
+					sketchData.colors.push(c);
+					//線の太さ
+					var w = parseInt(d[1]);// 太さ情報
+					sketchData.lineWidth.push(w);
+					var points = [];
+					//座標
+					for(var j=2 ; j<d.length ; j=j+3){
+						var px = parseFloat(d[j]);
+						var py = parseFloat(d[j+1]);
+						var pz = parseFloat(d[j+2]);
+						var p = new THREE.Vector3(px,py,pz);
+						points.push(p);
+					}
+					sketchData.vertices.push(p);
+				}
+				sketchData.lines = sketchData.colors.length;
+			}
+
 			function init(){
 				//読み込みの実行
 				var path = [
@@ -298,33 +359,7 @@
 				});
 			}
 
-			function persePCD(data){
-				console.log(data);
-				var data = data.split(/\r\n|\r|\n/);// 行ごとに分割
-				//PCDは10行目から
-				for(var i=10;i<data.length;i++){
-					var row = [];
-					var d = data[i].split(' ');
-					//							console.log(d);
-					for(var j=0 ; j<4 ; j++){
-						if(j<2){//座標情報
-							//xy座標
-							row.push(parseFloat(d[j]));
-						}else if(j==2){
-							//z座標
-							row.push(parseFloat(d[j])*-1+z0);
-						}else{
-							//色情報
-							var c = new THREE.Color(parseInt(d[j]));// color 10進数
-							depthData.colors.push(c);
-						}
-					}
-					depthData.vertices.push(new THREE.Vector3(row[0],row[1],row[2]));
-				}
-			}
-			function perseSketchData(data){
 
-			}
 			//HTMLが読み込まれたら実行
 			window.addEventListener('load', init, false);
 		</script>
