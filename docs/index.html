@@ -12,13 +12,15 @@
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 
 		<!--THREE.JS-->
-
 		<script src="js/three.min.js"></script>
 		<script type="text/javascript" src="js/Octree.js"></script>
 		<script src="js/renderers/Projector.js"></script>	
 		<script src="js/controls/TrackballControls.js"></script>
 		<script src="js/renderers/CanvasRenderer.js"></script>
 		<script src="js/libs/stats.min.js"></script>
+
+		<!--MY CSS-->
+		<link href="css/basic.css" rel="stylesheet" type="text/css" />
 
 	</head>
 	<body>
@@ -233,9 +235,18 @@
 
 
 				function resize() {
+					//基本的には横幅を画面サイズに合わせて、高さを最大化する
+					var h = window.innerWidth;
+					var w = window.innerHeight;
+
 					camera.updateProjectionMatrix();
-					var newheight = height*window.innerWidth/width;
-					renderer.setSize(window.innerWidth, newheight);
+					h = height*window.innerWidth/width;
+					//もし新しく設定した高さが画面からはみ出る場合は,横幅を再設定する
+					if(h>window.innerHeight){
+						h = window.innerWidth;
+						w = width*window.innerHeight/height;
+					}
+					renderer.setSize(h, w);
 				}
 
 				function createGeometry(count) {
