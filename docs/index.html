@@ -212,9 +212,10 @@
 				//スマホ向けに画面を最大化する
 				if (navigator.userAgent.indexOf('iPhone') > 0 || navigator.userAgent.indexOf('iPad') > 0 || navigator.userAgent.indexOf('iPod') > 0 || navigator.userAgent.indexOf('Android') > 0) {
 					//スマートフォン時に実行したいjs
+					window.scrollTo(0,0);
 					resize();
 				}
-				
+
 				//初期化
 				render();
 
@@ -284,28 +285,25 @@
 					}
 				});
 
-				$(renderer.domElement).on('mousedown', function(e) {
-					isDragging = true;
-				}).on('mousemove', function(e) {
-					if(isDragging) {
-						console.log("aaa ");
-						//画面内ドラッグ	controls.keys = [ 65, 83, 68 ];
-						//						var eve = document.createEvent("KeyboardEvent");
-						//						eve.initKeyboardEvent("keypress", true, true, window, true, false, false, false, 0, 68);
-						//						renderer.domElement.dispatchEvent(eve);
-
-						//						controls.changeState();
-
-					}
-				});
+				//				$(renderer.domElement).on('mousedown', function(e) {
+				//					isDragging = true;
+				//				}).on('mousemove', function(e) {
+				//					if(isDragging) {
+				//						console.log("aaa ");
+				//						//画面内ドラッグ	controls.keys = [ 65, 83, 68 ];
+				//						//						var eve = document.createEvent("KeyboardEvent");
+				//						//						eve.initKeyboardEvent("keypress", true, true, window, true, false, false, false, 0, 68);
+				//						//						renderer.domElement.dispatchEvent(eve);
+				//
+				//						//						controls.changeState();
+				//
+				//					}
+				//				});
+				//				
+				//				$(document).on('mouseup', function(e) {
+				//					isDragging = false;
+				//				});
 			};
-
-			/* */
-
-			$(document).on('mouseup', function(e) {
-				isDragging = false;
-			});
-
 			function init(){
 				//読み込みの実行
 				var path = [
@@ -390,6 +388,7 @@
 				}
 				sketchData.lines = sketchData.colors.length;
 			}
+
 			function changeControl(state){
 				//var STATE = { NONE: - 1, ROTATE: 0, ZOOM: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4 };
 				controls.changeState(state);
@@ -397,7 +396,12 @@
 
 			//HTMLが読み込まれたら実行
 			window.addEventListener('load', init, false);
-
+			window.onload = function() { 
+				if (navigator.userAgent.indexOf('iPhone') > 0 || navigator.userAgent.indexOf('iPad') > 0 || navigator.userAgent.indexOf('iPod') > 0 || navigator.userAgent.indexOf('Android') > 0) {
+					//スマートフォン時に実行したいjs
+					setTimeout(scrollTo, 100, 0, 1);
+				}
+			}
 		</script>
 
 		<!-- show canvas -->
