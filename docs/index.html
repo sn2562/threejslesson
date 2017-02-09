@@ -4,15 +4,15 @@
 		<meta charset="utf-8">
 		<title>Three.js Practice</title>
 
-		
+
 		<script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="   crossorigin="anonymous"></script>
-		
+
 		<!--BOOTSTRAP-->
 		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 
 		<!--THREE.JS-->
-		
+
 		<script src="js/three.min.js"></script>
 		<script type="text/javascript" src="js/Octree.js"></script>
 		<script src="js/renderers/Projector.js"></script>	
@@ -172,8 +172,6 @@
 
 
 				mesh = new THREE.LineSegments( tgeometry, tmaterial );
-				//				mesh.position.x -= 1200;
-				//				mesh.position.y -= 1200;
 
 				parent_node = new THREE.Object3D();
 				parent_node.add(mesh);
@@ -209,9 +207,14 @@
 
 				// trackballに変化があった時だけ描画を呼ぶ
 				controls.addEventListener( 'change', render );
+
 				//初期化
 				render();
-
+				//スマホ向けに画面を最大化する
+				if (navigator.userAgent.indexOf('iPhone') > 0 || navigator.userAgent.indexOf('iPad') > 0 || navigator.userAgent.indexOf('iPod') > 0 || navigator.userAgent.indexOf('Android') > 0) {
+					//スマートフォン時に実行したいjs
+					resize();
+				}
 				animate();
 
 				function animate() {
@@ -227,7 +230,8 @@
 
 				function resize() {
 					camera.updateProjectionMatrix();
-					renderer.setSize(window.innerWidth, window.innerHeight);
+					var newheight = height*window.innerWidth/width;
+					renderer.setSize(window.innerWidth, newheight);
 				}
 
 				function createGeometry(count) {
@@ -398,7 +402,7 @@
 
 		<!-- show controles -->
 		<div id="controles">
-			<label class="radio-inline">
+			<label class="ra3dio-inline">
 				<input type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1" checked onclick="changeControl(0)"> PAN/TILT/ROLL
 			</label>
 			<label class="radio-inline">
@@ -410,21 +414,21 @@
 		</div>
 
 		<!-- show sketch list -->
-<!--
-		<div id="list">
-			<div class="radio">
-				<label>
-					<input type="radio" name="optionsRadios" id="optionsRadios1" value="option1" checked>
-					Option one is this and that&mdash;be sure to include why it's great
-				</label>
-			</div>
-			<div class="radio">
-				<label>
-					<input type="radio" name="optionsRadios" id="optionsRadios2" value="option2">
-					Option two can be something else and selecting it will deselect option one
-				</label>
-			</div>
-		</div>
+		<!--
+<div id="list">
+<div class="radio">
+<label>
+<input type="radio" name="optionsRadios" id="optionsRadios1" value="option1" checked>
+Option one is this and that&mdash;be sure to include why it's great
+</label>
+</div>
+<div class="radio">
+<label>
+<input type="radio" name="optionsRadios" id="optionsRadios2" value="option2">
+Option two can be something else and selecting it will deselect option one
+</label>
+</div>
+</div>
 -->
 	</body>
 </html>
