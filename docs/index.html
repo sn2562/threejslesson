@@ -240,10 +240,10 @@
 					camera.updateProjectionMatrix();
 					h = height*window.innerWidth/width;
 					//もし新しく設定した高さが画面からはみ出る場合は,横幅を再設定する
-					if(h>window.innerHeight){
-						h = window.innerWidth;
-						w = width*window.innerHeight/height;
-					}
+//					if(h>window.innerHeight){
+//						h = window.innerWidth;
+//						w = width*window.innerHeight/height;
+//					}
 					renderer.setSize(h, w);
 				}
 
@@ -411,9 +411,9 @@
 			window.onload = function() { 
 				if (navigator.userAgent.indexOf('iPhone') > 0 || navigator.userAgent.indexOf('iPad') > 0 || navigator.userAgent.indexOf('iPod') > 0 || navigator.userAgent.indexOf('Android') > 0) {
 					//スマートフォン時に実行したいjs
-					setTimeout(function(){
-						window.scrollTo(0,1);
-					}, 1);
+//					setTimeout(function(){
+//						window.scrollTo(0,1);
+//					}, 1);
 				}
 			}
 		</script>
