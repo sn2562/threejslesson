@@ -331,12 +331,6 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 	};
 
-	//var STATE = { NONE: - 1, ROTATE: 0, ZOOM: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4 };
-	this.changeState = function (number) {
-		console.log("change!");
-		_state = number;
-	}
-
 	this.reset = function () {
 
 		_state = STATE.NONE;
@@ -355,6 +349,12 @@ THREE.TrackballControls = function ( object, domElement ) {
 		lastPosition.copy( _this.object.position );
 
 	};
+
+	//var STATE = { NONE: - 1, ROTATE: 0, ZOOM: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4 };
+	this.changeState = function (number) {
+		console.log("change!");
+		_state = number;
+	}
 
 	// listeners
 
@@ -464,7 +464,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 		event.preventDefault();
 		event.stopPropagation();
 
-//		_state = STATE.NONE;
+		_state = STATE.NONE;
 
 		document.removeEventListener( 'mousemove', mousemove );
 		document.removeEventListener( 'mouseup', mouseup );
@@ -624,6 +624,6 @@ THREE.TrackballControls = function ( object, domElement ) {
 	this.update();
 
 };
-//
-//THREE.TrackballControls.prototype = Object.create( THREE.EventDispatcher.prototype );
-//THREE.TrackballControls.prototype.constructor = THREE.TrackballControls;
+
+THREE.TrackballControls.prototype = Object.create( THREE.EventDispatcher.prototype );
+THREE.TrackballControls.prototype.constructor = THREE.TrackballControls;
