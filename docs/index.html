@@ -208,13 +208,16 @@
 				// trackballに変化があった時だけ描画を呼ぶ
 				controls.addEventListener( 'change', render );
 
-				//初期化
-				render();
+
 				//スマホ向けに画面を最大化する
 				if (navigator.userAgent.indexOf('iPhone') > 0 || navigator.userAgent.indexOf('iPad') > 0 || navigator.userAgent.indexOf('iPod') > 0 || navigator.userAgent.indexOf('Android') > 0) {
 					//スマートフォン時に実行したいjs
 					resize();
 				}
+				
+				//初期化
+				render();
+
 				animate();
 
 				function animate() {
