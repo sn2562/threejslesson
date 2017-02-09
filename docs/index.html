@@ -25,6 +25,12 @@
 	</head>
 	<body>
 		<script>
+			//load Files
+			var dataPath = [
+				'data/oikawa2015122219_49_21.dsd20151222_195710.dsddata.txt',
+				'data/c.dsddata.txt'
+			];//読み込みファイル一覧
+
 			//DOM
 			var container;
 
@@ -58,6 +64,18 @@
 				"colors_": [],
 				"lineWidth":[]
 			};
+
+
+			//HTMLが読み込まれたら実行
+			window.addEventListener('load', init, false);
+			window.onload = function() { 
+				if (navigator.userAgent.indexOf('iPhone') > 0 || navigator.userAgent.indexOf('iPad') > 0 || navigator.userAgent.indexOf('iPod') > 0 || navigator.userAgent.indexOf('Android') > 0) {
+					//スマートフォン時に実行したいjs
+					//					setTimeout(function(){
+					//						window.scrollTo(0,1);
+					//					}, 1);
+				}
+			}
 
 			function ready(){
 
@@ -95,7 +113,6 @@
 
 				//Axis
 				drawAxis();
-
 
 				//Depth Objects
 				group = new THREE.Object3D();
@@ -320,16 +337,12 @@
 			};
 			function init(){
 				//読み込みの実行
-				var path = [
-					'data/oikawa2015122219_49_21.dsd20151222_195710.dsddata.txt',
-					'data/c.dsddata.txt'
-				];
 
 				var dataList = [];
 
-				for (var i = 0; i <= path.length; i++) {
+				for (var i = 0; i <= dataPath.length; i++) {
 					dataList.push($.ajax({ // $.ajaxの戻り値をdataList配列に格納
-						url: path[i]
+						url: dataPath[i]
 					}));
 				}
 				//読み込み終了後の処理
@@ -348,8 +361,36 @@
 					//					}
 
 					//それぞれについて処理する 0番目はPCD,1番目はsketchデータ
+					//ラジオボタンも同時に生成する
+					var element = document.getElementById("datalist");
 					for(var i=0; i<arguments.length-1;i++){
 						perseData(arguments[i][0]);
+
+						//チェックボックスの生成
+						var box = document.createElement('div');
+						box.className = "radio";
+						//ラベルの生成
+						var label = document.createElement('label');
+
+						//radioボタンの生成
+						var button = document.createElement('input');
+						button.type = "radio";
+						button.name = "optionsRadios";
+						button.id = "optionsRadios"+i;
+						button.value = "option"+i;
+						button.for = box.name;
+						button.className = "datalist_contents";
+						if(i==0){
+							button.checked = "true"
+						}
+
+						//最後の子要素として追加
+						label.appendChild(button);
+						var num = i+1;
+						label.appendChild(document.createTextNode("SKetch Data "+num));
+						box.appendChild(label);
+						element.appendChild(box);
+
 					}
 					//					persePCD(arguments[0][0]);//デプスデータの準備
 					//					perseSketchData(arguments[1][0]);//スケッチデータの準備
@@ -358,6 +399,7 @@
 			}
 
 			function perseData (data){
+				var dataname = data[0];
 				var data = data.split(/\r\n|\r|\n/);// 行ごとに分割
 				var pcd_index = data[1].split(' ').map(Number);//数値に変換
 				var sketch_index = data[2].split(' ').map(Number);//数値に変換
@@ -424,17 +466,12 @@
 			function resetView(){
 				controls.reset();//始点をリセットする
 			}
+			//リストのラジオボタンが押された時に表示データを変更する
+			$(document).on("click",".datalist_contents",function(e) {
 
-			//HTMLが読み込まれたら実行
-			window.addEventListener('load', init, false);
-			window.onload = function() { 
-				if (navigator.userAgent.indexOf('iPhone') > 0 || navigator.userAgent.indexOf('iPad') > 0 || navigator.userAgent.indexOf('iPod') > 0 || navigator.userAgent.indexOf('Android') > 0) {
-					//スマートフォン時に実行したいjs
-					//					setTimeout(function(){
-					//						window.scrollTo(0,1);
-					//					}, 1);
-				}
-			}
+				console.log("tes "+e.target.id );
+
+			});
 		</script>
 
 		<!-- show canvas -->
@@ -442,8 +479,8 @@
 
 		<!-- show controles -->
 		<div id="controles">
-			<label class="ra3dio-inline">
-				<input type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1" onclick="changeControl(0)"> PAN/TILT/ROLL
+			<label class="radio-inline">
+				<input type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1" onclick="changeControl(0)" checked = "true"> PAN/TILT/ROLL
 			</label>
 			<label class="radio-inline">
 				<input type="radio" name="inlineRadioOptions" id="inlineRadio2" value="option2" onclick="changeControl(1)"> ZOOM IN/OUT
@@ -458,21 +495,10 @@
 
 
 		<!-- show sketch list -->
-		<!--
-<div id="list">
-<div class="radio">
-<label>
-<input type="radio" name="optionsRadios" id="optionsRadios1" value="option1" checked>
-Option one is this and that&mdash;be sure to include why it's great
-</label>
-</div>
-<div class="radio">
-<label>
-<input type="radio" name="optionsRadios" id="optionsRadios2" value="option2">
-Option two can be something else and selecting it will deselect option one
-</label>
-</div>
-</div>
--->
+
+		<div id="datalist">
+
+		</div>
+
 	</body>
 </html>
