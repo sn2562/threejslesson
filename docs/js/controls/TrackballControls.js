@@ -44,24 +44,24 @@ THREE.TrackballControls = function ( object, domElement ) {
 	var lastPosition = new THREE.Vector3();
 
 	var _state = STATE.NONE,
-	_prevState = STATE.NONE,
+		_prevState = STATE.NONE,
 
-	_eye = new THREE.Vector3(),
+		_eye = new THREE.Vector3(),
 
-	_movePrev = new THREE.Vector2(),
-	_moveCurr = new THREE.Vector2(),
+		_movePrev = new THREE.Vector2(),
+		_moveCurr = new THREE.Vector2(),
 
-	_lastAxis = new THREE.Vector3(),
-	_lastAngle = 0,
+		_lastAxis = new THREE.Vector3(),
+		_lastAngle = 0,
 
-	_zoomStart = new THREE.Vector2(),
-	_zoomEnd = new THREE.Vector2(),
+		_zoomStart = new THREE.Vector2(),
+		_zoomEnd = new THREE.Vector2(),
 
-	_touchZoomDistanceStart = 0,
-	_touchZoomDistanceEnd = 0,
+		_touchZoomDistanceStart = 0,
+		_touchZoomDistanceEnd = 0,
 
-	_panStart = new THREE.Vector2(),
-	_panEnd = new THREE.Vector2();
+		_panStart = new THREE.Vector2(),
+		_panEnd = new THREE.Vector2();
 
 	// for reset
 
@@ -331,6 +331,12 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 	};
 
+	//var STATE = { NONE: - 1, ROTATE: 0, ZOOM: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4 };
+	this.changeState = function (number) {
+		console.log("change!");
+		_state = number;
+	}
+
 	this.reset = function () {
 
 		_state = STATE.NONE;
@@ -458,7 +464,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 		event.preventDefault();
 		event.stopPropagation();
 
-		_state = STATE.NONE;
+//		_state = STATE.NONE;
 
 		document.removeEventListener( 'mousemove', mousemove );
 		document.removeEventListener( 'mouseup', mouseup );
@@ -475,13 +481,13 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 		switch ( event.deltaMode ) {
 
-                        case 2:
-                                // Zoom in pages
-                                _zoomStart.y -= event.deltaY * 0.025;
-                                break;
+			case 2:
+				// Zoom in pages
+				_zoomStart.y -= event.deltaY * 0.025;
+				break;
 
 			case 1:
-                                // Zoom in lines
+				// Zoom in lines
 				_zoomStart.y -= event.deltaY * 0.01;
 				break;
 
@@ -618,6 +624,6 @@ THREE.TrackballControls = function ( object, domElement ) {
 	this.update();
 
 };
-
-THREE.TrackballControls.prototype = Object.create( THREE.EventDispatcher.prototype );
-THREE.TrackballControls.prototype.constructor = THREE.TrackballControls;
+//
+//THREE.TrackballControls.prototype = Object.create( THREE.EventDispatcher.prototype );
+//THREE.TrackballControls.prototype.constructor = THREE.TrackballControls;

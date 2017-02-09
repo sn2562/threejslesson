@@ -15,7 +15,8 @@
 		<script src="js/three.min.js"></script>
 		<script type="text/javascript" src="js/Octree.js"></script>
 		<script src="js/renderers/Projector.js"></script>	
-		<script src="js/controls/TrackballControls.js"></script>
+		<!--		<script src="js/controls/TrackballControls.js"></script>-->
+		<script src="js/controls/TransformControls.js"></script>
 		<script src="js/renderers/CanvasRenderer.js"></script>
 		<script src="js/libs/stats.min.js"></script>
 
@@ -28,8 +29,6 @@
 			//操作
 			var controls;
 			var octree;
-			var isDragging = false;
-
 
 			//PCD
 
@@ -192,22 +191,28 @@
 
 
 				//controles
-				controls = new THREE.TrackballControls( camera,container );
-
-				controls.rotateSpeed = 1.0;
-				controls.zoomSpeed = 1.3;
-				controls.panSpeed = 0.8;
-
-				controls.noZoom = false;
-				controls.noPan = false;
-
-				controls.staticMoving = true;
-				controls.dynamicDampingFactor = 0.3;
-
-				controls.keys = [ 65, 83, 68 ];
+				console.log("renderer.domElement) "+renderer.domElement);
+				controls = new THREE.TransformControls( camera, renderer.domElement );
+				//
+				//				controls.rotateSpeed = 1.0;
+				//				controls.zoomSpeed = 1.3;
+				//				controls.panSpeed = 0.8;
+				//
+				//				controls.noZoom = false;
+				//				controls.noPan = false;
+				//
+				//				controls.staticMoving = true;
+				//				controls.dynamicDampingFactor = 0.3;
+				//
+				//				controls.keys = [ 65, 83, 68 ];
 
 				// trackballに変化があった時だけ描画を呼ぶ
 				controls.addEventListener( 'change', render );
+
+				controls.attach( group );
+				scene.add( controls );
+
+
 				//初期化
 				render();
 
@@ -265,39 +270,61 @@
 				}
 				//				window.addEventListener('resize', resize, false);//キャンバスサイズを画面に合わせる
 				window.addEventListener( 'keydown', function ( event ) {
-					console.log("keydown", event.keyCode);
+
 					switch ( event.keyCode ) {
 
-						case 13: //0 reset
-							console.log("controls",controls);
-
-							controls.reset();//始点をリセットする
+						case 81: // Q
+							controls.setSpace( controls.space === "local" ? "world" : "local" );
 							break;
+
+						case 17: // Ctrl
+							controls.setTranslationSnap( 100 );
+							controls.setRotationSnap( THREE.Math.degToRad( 15 ) );
+							break;
+
+						case 87: // W
+							controls.setMode( "translate" );
+							break;
+
+						case 69: // E
+							controls.setMode( "rotate" );
+							break;
+
+						case 82: // R
+							controls.setMode( "scale" );
+							break;
+
+						case 187:
+						case 107: // +, =, num+
+							controls.setSize( control.size + 0.1 );
+							break;
+
+						case 189:
+						case 109: // -, _, num-
+							controls.setSize( Math.max( control.size - 0.1, 0.1 ) );
+
+							break;
+						case 13: //0 reset
+							break;
+
 					}
+
 				});
 
-				$(renderer.domElement).on('mousedown', function(e) {
-					isDragging = true;
-				}).on('mousemove', function(e) {
-					if(isDragging) {
-						console.log("aaa ");
-						//画面内ドラッグ	controls.keys = [ 65, 83, 68 ];
-						//						var eve = document.createEvent("KeyboardEvent");
-						//						eve.initKeyboardEvent("keypress", true, true, window, true, false, false, false, 0, 68);
-						//						renderer.domElement.dispatchEvent(eve);
-
-						//						controls.changeState();
-
-					}
-				});
 			};
 
-			/* */
+			window.addEventListener( 'keyup', function ( event ) {
 
-			$(document).on('mouseup', function(e) {
-				isDragging = false;
+				switch ( event.keyCode ) {
+
+					case 17: // Ctrl
+						controls.setTranslationSnap( null );
+						controls.setRotationSnap( null );
+						break;
+
+				}
+
 			});
-
 			function init(){
 				//読み込みの実行
 				var path = [
@@ -365,6 +392,10 @@
 					var c = new THREE.Color(parseInt(d[0]));// color 10進数
 					sketchData.colors.push(c);
 
+					//hsl値で保存
+					//					var c_hsl = c.getHSL();
+					//					sketchData.colors_hsl.push(c_hsl.h, c_hsl.s, c_hsl.l);
+
 					//線の太さ
 					var w = parseInt(d[1]);// 太さ情報
 					sketchData.lineWidth.push(w);
@@ -382,10 +413,6 @@
 				}
 				sketchData.lines = sketchData.colors.length;
 			}
-			function changeControl(state){
-				//var STATE = { NONE: - 1, ROTATE: 0, ZOOM: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4 };
-				controls.changeState(state);
-			}
 
 			//HTMLが読み込まれたら実行
 			window.addEventListener('load', init, false);
@@ -393,18 +420,18 @@
 		</script>
 
 		<!-- show canvas -->
-		<div id="canvas" draggable="true" ondrag="myFunction(event)"></div>
+		<div id="canvas"></div>
 
 		<!-- show controles -->
 		<div id="controles">
 			<label class="radio-inline">
-				<input type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1" checked onclick="changeControl(0)"> PAN/TILT/ROLL
+				<input type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1" checked> TRANSLATE
 			</label>
 			<label class="radio-inline">
-				<input type="radio" name="inlineRadioOptions" id="inlineRadio2" value="option2" onclick="changeControl(1)"> ZOOM IN/OUT
+				<input type="radio" name="inlineRadioOptions" id="inlineRadio2" value="option2"> ROTATE
 			</label>
 			<label class="radio-inline">
-				<input type="radio" name="inlineRadioOptions" id="inlineRadio3" value="option3" onclick="changeControl(2)"> TRANSLATE
+				<input type="radio" name="inlineRadioOptions" id="inlineRadio3" value="option3"> SCALE
 			</label>
 		</div>
 
