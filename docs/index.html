@@ -321,8 +321,8 @@
 			function init(){
 				//読み込みの実行
 				var path = [
-					'data/PointCroudData.pcd',
-					'data/Sketch.txt'
+					'data/oikawa2015122219_49_21.dsd20151222_195710.dsddata.txt',
+					'data/c.dsddata.txt'
 				];
 
 				var dataList = [];
@@ -348,14 +348,28 @@
 					//					}
 
 					//それぞれについて処理する 0番目はPCD,1番目はsketchデータ
-					persePCD(arguments[0][0]);//デプスデータの準備
-					perseSketchData(arguments[1][0]);//スケッチデータの準備
+					for(var i=0; i<arguments.length-1;i++){
+						perseData(arguments[i][0]);
+					}
+					//					persePCD(arguments[0][0]);//デプスデータの準備
+					//					perseSketchData(arguments[1][0]);//スケッチデータの準備
 					ready();//描画
 				});
 			}
 
-			function persePCD(data){
+			function perseData (data){
 				var data = data.split(/\r\n|\r|\n/);// 行ごとに分割
+				var pcd_index = data[1].split(' ').map(Number);//数値に変換
+				var sketch_index = data[2].split(' ').map(Number);//数値に変換
+				//PCD部分とSKETCH部分をそれぞれ取り出して、perseする
+				console.log(pcd_index,sketch_index);
+
+				persePCD(data.slice(pcd_index[1], pcd_index[2]));//デプスデータの準備
+				perseSketchData(data.slice(sketch_index[1], sketch_index[2]));//スケッチデータの準備
+			}
+
+			function persePCD(data){
+				//				var data = data.split(/\r\n|\r|\n/);// 行ごとに分割
 				//PCDは10行目から
 				for(var i=10;i<data.length;i++){
 					var d = data[i].split(' ');
@@ -376,7 +390,7 @@
 				//スケッチデータの処理
 				//形式 1行ストローク [色 太さ P1座標 P1座標 P2座標 P3座標...]
 
-				data = data.split(/\r\n|\r|\n/);// 行ごとに分割
+				//				data = data.split(/\r\n|\r|\n/);// 行ごとに分割
 				for(var i=0;i<data.length;i++){
 					var d = data[i].split(' ');
 
