@@ -7,8 +7,7 @@ PVector[] vertex = {
   new PVector(0, 0, 0), new PVector(0, 0, 0), new PVector(0, 0, 0)
   };
   println(vertex);
-
-
+今回だけならそういう捉え方できるけど昨年からどうでもいいオーラめっちゃ出ててつらい⊂⌒~⊃｡Д｡)⊃
 
 
 

@@ -1,0 +1,76 @@
+<html>
+	<head>
+		<title>test app</title>
+		<style>canvas { width: 100%; height: 100% }</style>
+	</head>
+	<body>
+		<script src="js/three.min.js"></script>
+		<script src="https://rawgithub.com/mrdoob/three.js/master/build/three.js"></script>
+		<script type="x-shader/x-vertex" id="vshader">
+//頂点シェーダ
+varying vec2 vUV;
+      void main() {
+         gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+         vUV=uv;
+      }
+		</script>
+		<script type="x-shader/x-fragment" id="fshader">
+//フラグメントシェーダ
+varying vec2 vUV;
+ uniform sampler2D tex;
+ uniform sampler2D palette;
+      void main() {
+         float val= texture2D(tex, vUV).a;  
+         gl_FragColor =texture2D(palette,vec2(val,0.5));
+      }
+		</script>
+		<script>
+			var width=200;
+			var height=200;
+			var scene = new THREE.Scene(); 
+			var camera = new THREE.OrthographicCamera ( -1.0, 1.0,1.0, -1.0, 0.1, 2000 )
+			camera.position.z = 5;
+
+			var renderer = new THREE.WebGLRenderer({ alpha: true ,antialias:true});
+			renderer.setClearColor( new THREE.Color(0xffffff),0.0);//背景色
+			renderer.setSize(width, height);
+			document.body.appendChild(renderer.domElement); 
+			var geometry =  new THREE.PlaneGeometry( 4, 4, 10, 10 );
+			var luminance= new Float32Array( width*height);
+
+			var center =width/2;
+			var sigma=0.1;
+			for (var y = 0; y < height; ++y) {
+				for (var x = 0; x < width; ++x) {
+					var base = (y * width + x);//ピクセル座標
+					var relX=Math.abs(x-center)/width;//中心からの距離0.0-1.0 2.0は端っこを黒くするため
+					var relY=Math.abs(y-center)/height;//もし明るすぎると思ったら*3.0とかするといい。
+					var f=Math.exp(-(relX*relX+relY*relY)/(2.0*sigma*sigma));//0.0-1.0程度の値になる
+					var denom = Math.sqrt(2.0*Math.PI)*sigma;//分母部分
+					f=f/denom;
+					var val= f>1.0 ? 1.0 : f;
+					luminance[base] = val;
+				}
+			}//end y
+			var texloader = new THREE.TextureLoader();
+			var paletteTex=texloader.load("http://miffysora.wdfiles.com/local--files/palette/palette.png");
+			var tex= new THREE.DataTexture(luminance, width, height, THREE.AlphaFormat , THREE.FloatType );
+			tex.needsUpdate = true; // 絶対必要
+
+			var material = new THREE.ShaderMaterial({
+				vertexShader: document.getElementById('vshader').textContent,
+				fragmentShader: document.getElementById('fshader').textContent,
+				uniforms:{
+					tex:{type: 't',value:tex},
+					palette:{type: 't',value:paletteTex}
+				}
+			});
+			var cube = new THREE.Mesh(geometry, material);
+			scene.add(cube);
+			render();
+			function render() {
+				requestAnimationFrame( render );
+				renderer.render( scene, camera );
+			}
+		</script>
+	</body>

@@ -43,6 +43,7 @@
 				"lines": 0,
 				"vertices": [],
 				"colors": [],
+				"colors_": [],
 				"lineWidth":[]
 			};
 
@@ -99,56 +100,48 @@
 				//Test Line Objects 2
 
 				var tgeometry = new THREE.BufferGeometry();
-				var tmaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors });
+				var tmaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors,linewidth: 10});
 
 				var positions = [];
 				var next_positions_index = 0;
-				var colors = [];
+//				var colors = [];
 				var indices_array = [];
 
-				//
-
-				var iteration_count = 4;
-				//				var rangle = 60 * Math.PI / 180.0;
-
-				function add_vertex(v) {
-
+				//配列にpushされる値を全て同じ値にする
+				var orign1 = 0.9464358738441498;
+				var orign2 = 0.7707642675850559;
+//				var orignColor = THREE.Color( 0x1f739e );
+				console.log("orign color ",orign1,orign2);
+				
+				function add_vertex(v,idx) {
 					if (next_positions_index == 0xffff) throw new Error("Too many points");
 
 					positions.push(v.x, v.y, v.z);
-					colors.push(Math.random()*0.5+0.5, Math.random()*0.5+0.5, 1);
+					//色情報を追加する
+//					colors.push(Math.random()*0.5+0.5, Math.random()*0.5+0.5, 1);//
+
+					//color情報からidxに相当するTHREE.colorを抜き出し、hsl値に変換して登録する
+
+					var rgb = sketchData.colors[idx].toArray();//だめ
+					sketchData.colors_.push(rgb[2],rgb[1],rgb[0]);//BGRの順に登録
+
 					return next_positions_index++;
 				}
-
 				// simple Koch curve
 
-				function snowflake_iteration(p0, p4, depth) {
-
+				function snowflake_iteration(p0, p4, depth,idx) {
 					if (--depth < 0) {
-
 						var i = next_positions_index-1; // p0 already there
-						add_vertex(p4);
+						add_vertex(p4,idx);
 						indices_array.push(i, i+1);
 						return;
 					}
 				}
 
-				function snowflake(points, loop, x_offset) {
-
-					for (var iteration = 0; iteration != iteration_count; ++iteration) {
-
-						add_vertex(points[0]);
-						for (var p_index=0, p_count=points.length-1; p_index != p_count; ++p_index) {
-							snowflake_iteration(points[p_index], points[p_index+1], iteration);
-						}
-
-						if (loop) snowflake_iteration(points[points.length-1], points[0], iteration);
-
-						// translate input curve for next iteration
-						for (var p_index=0, p_count=points.length; p_index != p_count; ++p_index) {
-							points[p_index].x += x_offset;
-						}
-
+				function snowflake(points, loop, x_offset,idx) {
+					add_vertex(points[0],idx);
+					for (var p_index=0, p_count=points.length-1; p_index != p_count; ++p_index) {
+						snowflake_iteration(points[p_index], points[p_index+1], 0,idx);
 					}
 				}
 
@@ -158,17 +151,20 @@
 						snowflake
 						(
 							sketchData.vertices[i],
-							false, 600
+							false, 600,i
 						);
 					}
 				}
-				//				console.log("colors",colors);
-				//				console.log("colors",sketchData.colors);
 				tgeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );
 				tgeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( positions ), 3 ) );
-				tgeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( colors ), 3 ) );
-				//				tgeometry.colors = sketchData.colors;
-				tgeometry.computeBoundingSphere();
+				//				tgeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array(colors), 3 ) );//なんか綺麗なやつ
+				tgeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array(sketchData.colors_), 3 ) );
+
+				tgeometry.attributes.position.needsUpdate = true;
+				tgeometry.attributes.color.needsUpdate = true;
+				tgeometry.colors = sketchData.colors;
+
+
 
 				mesh = new THREE.LineSegments( tgeometry, tmaterial );
 				//				mesh.position.x -= 1200;
@@ -190,7 +186,6 @@
 				renderer.setClearColor(0xffffff, 0);
 				renderer.setPixelRatio(window.devicePixelRatio);
 				container.appendChild(renderer.domElement);
-
 
 
 				//controles
@@ -408,6 +403,10 @@
 					var c = new THREE.Color(parseInt(d[0]));// color 10進数
 					sketchData.colors.push(c);
 
+					//hsl値で保存
+					//					var c_hsl = c.getHSL();
+					//					sketchData.colors_hsl.push(c_hsl.h, c_hsl.s, c_hsl.l);
+
 					//線の太さ
 					var w = parseInt(d[1]);// 太さ情報
 					sketchData.lineWidth.push(w);
@@ -428,6 +427,50 @@
 
 			//HTMLが読み込まれたら実行
 			window.addEventListener('load', init, false);
+
+			function RGBtoHSV(r, g, b) {
+				if (arguments.length === 1) {
+					g = r.g, b = r.b, r = r.r;
+				}
+				var max = Math.max(r, g, b), min = Math.min(r, g, b),
+					d = max - min,
+					h,
+					s = (max === 0 ? 0 : d / max),
+					v = max / 255;
+
+				switch (max) {
+					case min: h = 0; break;
+					case r: h = (g - b) + d * (g < b ? 6: 0); h /= 6 * d; break;
+					case g: h = (b - r) + d * 2; h /= 6 * d; break;
+					case b: h = (r - g) + d * 4; h /= 6 * d; break;
+				}
+
+				return {
+					h: h,
+					s: s,
+					v: v
+				};
+			}
+			function HSLtoHSV(h, s, l) {
+				if (arguments.length === 1) {
+					s = h.s, l = h.l, h = h.h;
+				}
+				var _h = h,
+					_s,
+					_v;
+
+				l *= 2;
+				s *= (l <= 1) ? l : 2 - l;
+				_v = (l + s) / 2;
+				_s = (2 * s) / (l + s);
+
+				return {
+					h: _h,
+					s: _s,
+					v: _v
+				};
+			}
+
 		</script>
 	</body>
 </html>
