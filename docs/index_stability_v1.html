@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ja">
+	<head>
+		<meta charset="utf-8">
+		<title>Three.js Practice</title>
+
+
+		<script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="   crossorigin="anonymous"></script>
+
+		<!--BOOTSTRAP-->
+		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+		<!--THREE.JS-->
+		<script src="js/three.min.js"></script>
+		<script type="text/javascript" src="js/Octree.js"></script>
+		<script src="js/renderers/Projector.js"></script>	
+		<script src="js/controls/TrackballControls.js"></script>
+		<script src="js/renderers/CanvasRenderer.js"></script>
+		<script src="js/libs/stats.min.js"></script>
+
+		<!--MY CSS-->
+		<link href="css/basic.css" rel="stylesheet" type="text/css" />
+
+	</head>
+	<body>
+		<script>
+			//DOM
+			var container;
+
+			//操作
+			var controls;
+			var octree;
+			var isDragging = false;
+
+
+			//PCD
+
+			//constract
+			var zoom = 0.8;
+			var width=640*zoom;
+			var height=480*zoom;
+			var z0 = (height/2)/Math.tan(Math.PI/8);
+
+			var dgeometry = null;
+			var dmaterial = null;
+			var group = null;
+
+			var depthData = {
+				"points": 0,
+				"vertices": [],
+				"colors": []
+			};
+			var sketchData = {
+				"lines": 0,
+				"vertices": [],
+				"colors": [],
+				"colors_": [],
+				"lineWidth":[]
+			};
+
+			function ready(){
+
+				// DOM
+				container = document.createElement('div');
+				//				document.body.appendChild(container);
+				document.getElementById("canvas").appendChild(container);
+
+
+				// Scene
+				var scene = new THREE.Scene();
+
+
+				// Camera
+				var camera = new THREE.PerspectiveCamera(45, width/height, 10, 150000);
+				camera.position.set(0,0,z0);
+
+				// create octree
+
+				octree = new THREE.Octree( {
+					// uncomment below to see the octree (may kill the fps)
+					//scene: scene,
+					// when undeferred = true, objects are inserted immediately
+					// instead of being deferred until next octree.update() call
+					// this may decrease performance as it forces a matrix update
+					undeferred: false,
+					// set the max depth of tree
+					depthMax: Infinity,
+					// max number of objects before nodes split or merge
+					objectsThreshold: 8,
+					// percent between 0 and 1 that nodes will overlap each other
+					// helps insert objects that lie over more than one node
+					overlapPct: 0.15
+				} );
+
+				//Axis
+				drawAxis();
+
+
+				//Depth Objects
+				group = new THREE.Object3D();
+				dgeometry = new THREE.Geometry();
+				dgeometry.dynamic = true;
+				dgeometry.colors = depthData.colors;
+				dgeometry.vertices = depthData.vertices;
+				var dmaterial = new THREE.PointsMaterial({
+					size: 10,
+					vertexColors: true
+				});
+				particles = new THREE.Points(dgeometry, dmaterial);
+				//				group.add(particles);//add depth data
+
+				//Test Line Objects 2
+
+				var tgeometry = new THREE.BufferGeometry();
+				var tmaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors,linewidth: 10});
+
+				var positions = [];
+				var next_positions_index = 0;
+				//				var colors = [];
+				var indices_array = [];
+
+				function add_vertex(v,idx) {
+					if (next_positions_index == 0xffff) throw new Error("Too many points");
+
+					positions.push(v.x, v.y, v.z);
+					//色情報を追加する
+					//					colors.push(Math.random()*0.5+0.5, Math.random()*0.5+0.5, 1);//
+
+					//color情報からidxに相当するTHREE.colorを抜き出し、hsl値に変換して登録する
+
+					var rgb = sketchData.colors[idx].toArray();//だめ
+					sketchData.colors_.push(rgb[2],rgb[1],rgb[0]);//BGRの順に登録
+
+					return next_positions_index++;
+				}
+				// simple Koch curve
+
+				function snowflake_iteration(p0, p4, depth,idx) {
+					if (--depth < 0) {
+						var i = next_positions_index-1; // p0 already there
+						add_vertex(p4,idx);
+						indices_array.push(i, i+1);
+						return;
+					}
+				}
+
+				function snowflake(points, loop, x_offset,idx) {
+					add_vertex(points[0],idx);
+					for (var p_index=0, p_count=points.length-1; p_index != p_count; ++p_index) {
+						snowflake_iteration(points[p_index], points[p_index+1], 0,idx);
+					}
+				}
+
+				//矩形の生成
+				for(var i=0; i<sketchData.lines;i++){
+					if(sketchData.vertices[i].length!=0){//線が登録されていれば
+						snowflake
+						(
+							sketchData.vertices[i],
+							false, 600,i
+						);
+					}
+				}
+				tgeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );
+				tgeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( positions ), 3 ) );
+				//				tgeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array(colors), 3 ) );//なんか綺麗なやつ
+				tgeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array(sketchData.colors_), 3 ) );
+
+				tgeometry.attributes.position.needsUpdate = true;
+				tgeometry.attributes.color.needsUpdate = true;
+				tgeometry.colors = sketchData.colors;
+
+
+
+				mesh = new THREE.LineSegments( tgeometry, tmaterial );
+
+				parent_node = new THREE.Object3D();
+				parent_node.add(mesh);
+
+				group.add( parent_node );//add sketch data
+
+				scene.add(group);
+
+
+				// Renderer
+				var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+				renderer.setSize(width, height);//画面サイズ
+				renderer.setClearColor(0xFCFBF6, 1);//背景色
+				renderer.setPixelRatio(window.devicePixelRatio);
+				container.appendChild(renderer.domElement);
+
+
+				//controles
+				controls = new THREE.TrackballControls( camera,container );
+
+				controls.rotateSpeed = 1.0;
+				controls.zoomSpeed = 1.3;
+				controls.panSpeed = 0.8;
+
+				controls.noZoom = false;
+				controls.noPan = false;
+
+				controls.staticMoving = true;
+				controls.dynamicDampingFactor = 0.3;
+
+				controls.keys = [ 65, 83, 68 ];
+
+				// trackballに変化があった時だけ描画を呼ぶ
+				controls.addEventListener( 'change', render );
+
+
+				//スマホ向けに画面を最大化する
+				if (navigator.userAgent.indexOf('iPhone') > 0 || navigator.userAgent.indexOf('iPad') > 0 || navigator.userAgent.indexOf('iPod') > 0 || navigator.userAgent.indexOf('Android') > 0) {
+					//スマートフォン時に実行したいjs
+					window.scrollTo(0,0);
+					resize();
+				}
+
+				//初期化
+				render();
+
+				animate();
+
+				function animate() {
+					requestAnimationFrame(animate);
+					controls.update();
+					//					render();
+				}
+
+				function render() {
+					renderer.render(scene, camera);
+				}
+
+				function resize() {
+					//TODO 基本的には横幅を画面サイズに合わせて、高さを最大化する
+					var h = window.innerWidth;
+					var w = window.innerHeight;
+
+					camera.updateProjectionMatrix();
+					h = height*window.innerWidth/width;
+
+					//もし新しく設定した高さが画面からはみ出る場合は,横幅を再設定する
+					//					if(h>window.innerHeight){
+					//						h = window.innerWidth;
+					//						w = width*window.innerHeight/height;
+					//					}
+
+					renderer.setSize(h, w);
+
+					var newheight = height*window.innerWidth/width;
+					renderer.setSize(window.innerWidth, newheight);
+				}
+
+				function createGeometry(count) {
+					var geometry = new THREE.Geometry();
+
+					for (var i = 0; i < count; i++) {
+						var x = Math.random() * 1000 - 500;
+						var y = Math.random() * 1000 - 500;
+						var z = Math.random() * 1000 - 500;
+						var particle = new THREE.Vector3(x, y, z);
+						particle.velocity = new THREE.Vector3(0, -Math.random(), 0);
+						geometry.vertices.push(particle);
+					}
+					return geometry;
+				}
+
+				//座標系
+				function drawAxis(){
+					// line
+					//create a blue LineBasicMaterial
+					var material = new THREE.LineBasicMaterial({ color: 0x0000ff });
+
+					var geometry = new THREE.Geometry();
+
+					var lineLenght = 10000;
+					geometry.vertices.push(new THREE.Vector3(0, 0, 0));
+					geometry.vertices.push(new THREE.Vector3(lineLenght, 0, 0));
+					geometry.vertices.push(new THREE.Vector3(0, 0, 0));
+					geometry.vertices.push(new THREE.Vector3(0, lineLenght, 0));
+					geometry.vertices.push(new THREE.Vector3(0, 0, 0));
+					geometry.vertices.push(new THREE.Vector3(0, 0, lineLenght));
+
+					var line = new THREE.Line(geometry, material);
+
+					scene.add(line);
+				}
+				//				window.addEventListener('resize', resize, false);//キャンバスサイズを画面に合わせる
+				window.addEventListener( 'keydown', function ( event ) {
+					console.log("keydown", event.keyCode);
+					switch ( event.keyCode ) {
+
+						case 13: //0 reset
+							console.log("controls",controls);
+
+							controls.reset();//始点をリセットする
+							break;
+					}
+				});
+
+				//				$(renderer.domElement).on('mousedown', function(e) {
+				//					isDragging = true;
+				//				}).on('mousemove', function(e) {
+				//					if(isDragging) {
+				//						console.log("aaa ");
+				//						//画面内ドラッグ	controls.keys = [ 65, 83, 68 ];
+				//						//						var eve = document.createEvent("KeyboardEvent");
+				//						//						eve.initKeyboardEvent("keypress", true, true, window, true, false, false, false, 0, 68);
+				//						//						renderer.domElement.dispatchEvent(eve);
+				//
+				//						//						controls.changeState();
+				//
+				//					}
+				//				});
+				//				
+				//				$(document).on('mouseup', function(e) {
+				//					isDragging = false;
+				//				});
+			};
+			function init(){
+				//読み込みの実行
+				var path = [
+					'data/PointCroudData.pcd',
+					'data/Sketch.txt'
+				];
+
+				var dataList = [];
+
+				for (var i = 0; i <= path.length; i++) {
+					dataList.push($.ajax({ // $.ajaxの戻り値をdataList配列に格納
+						url: path[i]
+					}));
+				}
+				//読み込み終了後の処理
+				$.when.apply($, dataList).done(function () {
+					// 結果は仮引数に可変長で入る **順番は保証されている**
+					// 取り出すには arguments から取り出す
+					// argumentsはそれぞれ [data, textStatus, jqXHR] の配列になっている
+
+					//全てを取り出す
+					//					for (var i = 0; i < arguments.length-1; i++) {
+					//						var result = arguments[i];
+					//						console.log(i,result[0]);//data
+					//						//						console.log(i,result[1]);//textStatus
+					//						//						console.log(i,result[3]);jqXHR
+					//						console.log("test",i);
+					//					}
+
+					//それぞれについて処理する 0番目はPCD,1番目はsketchデータ
+					persePCD(arguments[0][0]);//デプスデータの準備
+					perseSketchData(arguments[1][0]);//スケッチデータの準備
+					ready();//描画
+				});
+			}
+
+			function persePCD(data){
+				var data = data.split(/\r\n|\r|\n/);// 行ごとに分割
+				//PCDは10行目から
+				for(var i=10;i<data.length;i++){
+					var d = data[i].split(' ');
+
+					//色情報
+					var c = new THREE.Color(parseInt(d[3]));// color 10進数
+					depthData.colors.push(c);
+
+					//座標情報
+					var px = parseFloat(d[0]);
+					var py = parseFloat(d[1]);
+					var pz = parseFloat(d[2]*-1+z0);
+
+					depthData.vertices.push(new THREE.Vector3(px,py,pz));
+				}
+			}
+			function perseSketchData(data){
+				//スケッチデータの処理
+				//形式 1行ストローク [色 太さ P1座標 P1座標 P2座標 P3座標...]
+
+				data = data.split(/\r\n|\r|\n/);// 行ごとに分割
+				for(var i=0;i<data.length;i++){
+					var d = data[i].split(' ');
+
+					//色
+					var c = new THREE.Color(parseInt(d[0]));// color 10進数
+					sketchData.colors.push(c);
+
+					//線の太さ
+					var w = parseInt(d[1]);// 太さ情報
+					sketchData.lineWidth.push(w);
+					var points = [];
+
+					//座標情報
+					for(var j=2 ; j<d.length ; j=j+3){
+						var px = parseFloat(d[j]);
+						var py = parseFloat(d[j+1]);
+						var pz = parseFloat(d[j+2]*-1+z0);
+						var p = new THREE.Vector3(px,py,pz);
+						points.push(p);
+					}
+					sketchData.vertices.push(points);
+				}
+				sketchData.lines = sketchData.colors.length;
+			}
+
+			//DOM側から実行する関数
+			function changeControl(state){
+				//var STATE = { NONE: - 1, ROTATE: 0, ZOOM: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4 };
+				controls.changeState(state);
+			}
+			function resetView(){
+				controls.reset();//始点をリセットする
+			}
+
+			//HTMLが読み込まれたら実行
+			window.addEventListener('load', init, false);
+			window.onload = function() { 
+				if (navigator.userAgent.indexOf('iPhone') > 0 || navigator.userAgent.indexOf('iPad') > 0 || navigator.userAgent.indexOf('iPod') > 0 || navigator.userAgent.indexOf('Android') > 0) {
+					//スマートフォン時に実行したいjs
+					//					setTimeout(function(){
+					//						window.scrollTo(0,1);
+					//					}, 1);
+				}
+			}
+		</script>
+
+		<!-- show canvas -->
+		<div id="canvas" draggable="true" ondrag="myFunction(event)"></div>
+
+		<!-- show controles -->
+		<div id="controles">
+			<label class="ra3dio-inline">
+				<input type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1" onclick="changeControl(0)"> PAN/TILT/ROLL
+			</label>
+			<label class="radio-inline">
+				<input type="radio" name="inlineRadioOptions" id="inlineRadio2" value="option2" onclick="changeControl(1)"> ZOOM IN/OUT
+			</label>
+			<label class="radio-inline">
+				<input type="radio" name="inlineRadioOptions" id="inlineRadio3" value="option3" onclick="changeControl(2)"> TRANSLATE
+			</label>
+			<br>
+			<button type="submit" class="btn btn-success" onclick="resetView()">RESET VIEWPOINT</button>
+
+		</div>
+
+
+		<!-- show sketch list -->
+		<!--
+<div id="list">
+<div class="radio">
+<label>
+<input type="radio" name="optionsRadios" id="optionsRadios1" value="option1" checked>
+Option one is this and that&mdash;be sure to include why it's great
+</label>
+</div>
+<div class="radio">
+<label>
+<input type="radio" name="optionsRadios" id="optionsRadios2" value="option2">
+Option two can be something else and selecting it will deselect option one
+</label>
+</div>
+</div>
+-->
+	</body>
+</html>
