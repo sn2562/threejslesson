@@ -180,7 +180,6 @@
 
 				group.add( parent_node );//add sketch data
 
-
 				scene.add(group);
 
 
@@ -232,7 +231,6 @@
 				function render() {
 					renderer.render(scene, camera);
 				}
-
 
 				function resize() {
 					//基本的には横幅を画面サイズに合わせて、高さを最大化する
@@ -324,7 +322,6 @@
 
 				var dataList = [];
 
-
 				for (var i = 0; i <= path.length; i++) {
 					dataList.push($.ajax({ // $.ajaxの戻り値をdataList配列に格納
 						url: path[i]
@@ -400,9 +397,13 @@
 				sketchData.lines = sketchData.colors.length;
 			}
 
+			//DOM側から実行する関数
 			function changeControl(state){
 				//var STATE = { NONE: - 1, ROTATE: 0, ZOOM: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4 };
 				controls.changeState(state);
+			}
+			function resetView(){
+				controls.reset();//始点をリセットする
 			}
 
 			//HTMLが読み込まれたら実行
@@ -423,7 +424,7 @@
 		<!-- show controles -->
 		<div id="controles">
 			<label class="ra3dio-inline">
-				<input type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1" checked onclick="changeControl(0)"> PAN/TILT/ROLL
+				<input type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1" onclick="changeControl(0)"> PAN/TILT/ROLL
 			</label>
 			<label class="radio-inline">
 				<input type="radio" name="inlineRadioOptions" id="inlineRadio2" value="option2" onclick="changeControl(1)"> ZOOM IN/OUT
@@ -431,7 +432,11 @@
 			<label class="radio-inline">
 				<input type="radio" name="inlineRadioOptions" id="inlineRadio3" value="option3" onclick="changeControl(2)"> TRANSLATE
 			</label>
+			<br>
+			<button type="submit" class="btn btn-success" onclick="resetView()">RESET VIEWPOINT</button>
+
 		</div>
+
 
 		<!-- show sketch list -->
 		<!--
