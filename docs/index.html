@@ -32,7 +32,7 @@
 			//load Files
 			var dataPath = [
 				'data/13_0_3.dsddata.txt',
-				'data/13_9_39.dsddata.txt',
+				//				'data/13_9_39.dsddata.txt',
 				'data/14_56_24.dsddata.txt'
 				//				'data/box1.dsddata.txt',
 				//				'data/dancefigure.txt',
@@ -61,34 +61,28 @@
 			var height=480*zoom;
 			var z0 = (height/2)/Math.tan(Math.PI/8);
 
-
 			var renderer;
 			var scene;
 			var camera;
 
-			//depthdata
-			var dgeometry = null;
-			var dmaterial = null;
+			//objects
 			var group = null;
+
+			//depthdata
+			var depthGeometry = null;
+			
 			//sketchdata
 			var sketchGeometry;
 
-
-			//Data
-			var depthData = {
-				"points": 0,
-				"vertices": [],
-				"colors": []
-			};
-			var depthDataRange = [];
-			var sketchDataRange = [];
+			//現在の選択データ
 			var nowDataNumber = 0;
 
 			var allData = [];
 			var sketch_endpoints = [];//データの区切り位置を保存
+			var depth_endpoints = [];//データの区切り位置を保存
 
 			//Animation
-			var isAnimation = true;//animation mode
+			var isAnimation = false;//animation mode
 			var animOrder = [0,1,2,1];//読み込みデータに応じて表示順序を指示
 			var animIndex = 0;//
 			//calc framerate
@@ -119,7 +113,6 @@
 				// Scene
 				scene = new THREE.Scene();
 
-
 				// Camera
 				camera = new THREE.PerspectiveCamera(45, width/height, 10, 150000);
 				camera.position.set(0,0,z0);
@@ -148,18 +141,31 @@
 
 				//Depth Objects
 				group = new THREE.Object3D();
-				dgeometry = new THREE.Geometry();
-				dgeometry.dynamic = true;
-				//TODO alldataに含まれる全てのデータについてcolorsを結合したものとverticesを結合したものそれぞれを使用できるようにする
-				dgeometry.colors = depthData.colors;
-				dgeometry.vertices = depthData.vertices;
-				var dmaterial = new THREE.PointsMaterial({
-					size: 10,
-					vertexColors: true
-				});
 
-				particles = new THREE.Points(dgeometry, dmaterial);
-				//				group.add(particles);//add depth data
+				//Depth Objects with Buffer Geometry
+				//TODO alldataに含まれる全てのデータについてcolorsを結合したものとverticesを結合したものそれぞれを使用できるようにする
+				var depthPoints = [];
+				var depthColor = [];
+				for(var i=0;i<allData.length;i++){
+					for(var j=0;j<allData[i].depthData.vertices.length;j++){
+						// positions
+						var p = allData[i].depthData.vertices[j];
+						depthPoints.push(p.x, p.y, p.z);
+						// colors
+						var c = allData[i].depthData.colors[j].toArray();
+						depthColor.push(c[0],c[1],c[2]);//BGRの順に登録
+					}
+					depth_endpoints.push(depthPoints.length/3);
+				}
+
+				depthGeometry = new THREE.BufferGeometry();
+				depthGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( depthPoints ), 3 ) );
+				depthGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( depthColor ), 3 ) );
+
+				var depthMaterial = new THREE.PointsMaterial( { size: 15, vertexColors: THREE.VertexColors } );
+				depthPoints = new THREE.Points( depthGeometry, depthMaterial );
+				group.add( depthPoints );
+				//				console.log("group "+group.children[0]);
 
 				//Test Line Objects 2
 
@@ -180,13 +186,13 @@
 					positions.push(v.x, v.y, v.z);//頂点情報
 					colors.push(rgb[0],rgb[1],rgb[2]);//BGRの順に登録
 
-					//此処のデータにもとづいている部分
+					//個々のデータにもとづいている部分
 					allData[datanum].sketchData.positions_.push(v.x, v.y, v.z);//BGRの順に登録
 					allData[datanum].sketchData.colors_.push(rgb[2],rgb[1],rgb[0]);//BGRの順に登録
 					return next_positions_index++;
 				}
-				// simple Koch curve
 
+				// simple Koch curve
 				function snowflake_iteration(p0, p4, depth,datanum,idx) {
 					if (--depth < 0) {
 						var i = next_positions_index-1; // p0 already there
@@ -228,41 +234,16 @@
 				sketchGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( positions ), 3 ) );
 				sketchGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array(colors ), 3 ) );
 
-
-				//描画範囲を.setDrawRange(開始位置,範囲)で決める
-				var sketch_start = 0;
-				var sketch_range = sketch_endpoints[nowDataNumber];//おおよそのスケッチ範囲 
-
-				//開始と範囲を決める
-				if(nowDataNumber == 0){
-					sketch_start = 0;
-				}else{
-					sketch_start = sketch_endpoints[nowDataNumber-1];
-					sketch_range = sketch_range - sketch_endpoints[nowDataNumber-1]
-				}
-
-				sketchGeometry.setDrawRange(sketch_start,sketch_range);
-				//				console.log("sketch_start - sketch_end ",sketch_start,sketch_range);
-				//				console.log("sketch_endpoints ",sketch_endpoints);				
-
-
-
-
-
-				//				sketchGeometry.attributes.position.needsUpdate = true;//if you want to change the position data values after the first render
-
 				mesh = new THREE.LineSegments( sketchGeometry, tmaterial );
-
 
 				parent_node = new THREE.Object3D();
 				parent_node.add(mesh);
 
 
-
-				group.add( parent_node );//add sketch data
-
+				//				group.add( parent_node );//add sketch data
 				scene.add(group);
 
+				changeDrawData(nowDataNumber);//描画範囲を現在のデータのみに絞る
 
 				// Renderer
 				renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -270,7 +251,6 @@
 				renderer.setClearColor(0xFCFBF6, 1);//背景色
 				renderer.setPixelRatio(window.devicePixelRatio);
 				container.appendChild(renderer.domElement);
-
 
 				//controles
 				controls = new THREE.TrackballControls( camera,container );
@@ -297,8 +277,7 @@
 					resize();
 				}
 
-				//初期化
-				render();
+				render();//描画
 
 				animate();
 
@@ -307,7 +286,6 @@
 					controls.update();
 					if(isAnimation)
 						render();
-
 				}
 
 				function render() {
@@ -475,9 +453,6 @@
 				var pcd_index = data[1].split(' ').map(Number);//数値に変換
 				var sketch_index = data[2].split(' ').map(Number);//数値に変換
 
-				depthDataRange.push(pcd_index.slice(1, 3));
-				//				sketchDataRange.push(sketch_index.slice(1, 3));
-
 				//PCD部分とSKETCH部分をそれぞれ取り出して、perseする
 				var newData ={"depthData":{},
 							  "sketchData":{}
@@ -504,7 +479,6 @@
 					//色情報
 					var c = new THREE.Color(parseInt(d[3]));// color 10進数
 					dData.colors.push(c);
-					depthData.colors.push(c);
 
 					//座標情報
 					var px = parseFloat(d[0]);
@@ -512,8 +486,8 @@
 					var pz = parseFloat(d[2]*-1+z0);
 
 					dData.vertices.push(new THREE.Vector3(px,py,pz));
-					depthData.vertices.push(new THREE.Vector3(px,py,pz));
 				}
+				dData.points = dData.vertices.length;
 				allData[allData.length-1].depthData = dData;
 			}
 
@@ -529,8 +503,6 @@
 					"colors_": [],
 					"lineWidth":[]
 				};
-
-				sketchDataRange.push(0);
 
 				for(var i=0;i<data.length;i++){
 					var d = data[i].split(' ');
@@ -553,7 +525,6 @@
 						points.push(p);
 					}
 					sData.vertices.push(points);
-					sketchDataRange[sketchDataRange.length-1] += 3;
 				}
 				sData.lines = sData.colors.length;
 
@@ -564,21 +535,24 @@
 				//idx番目のデータに描画を書き換える
 				nowDataNumber = idx;
 
-				//描画範囲を.setDrawRange(開始位置,範囲)で決める
-				var sketch_start = 0;
-				var sketch_range = sketch_endpoints[nowDataNumber];//おおよそのスケッチ範囲 
+				//depth data
+				var d_start = 0;
+				var d_range = depth_endpoints[nowDataNumber];
+				//sketch data
+				var s_start = 0;
+				var s_range = sketch_endpoints[nowDataNumber];
 
-				//開始と範囲を決める
-				if(nowDataNumber == 0){
-					sketch_start = 0;
-				}else{
-					sketch_start = sketch_endpoints[nowDataNumber-1];
-					sketch_range = sketch_range - sketch_endpoints[nowDataNumber-1]
+				console.log("depth_endpoints ",depth_endpoints);
+
+				if(nowDataNumber != 0){
+					d_start = depth_endpoints[nowDataNumber-1];
+					d_range = d_range - depth_endpoints[nowDataNumber-1];
+
+					s_start = sketch_endpoints[nowDataNumber-1];
+					s_range = s_range - sketch_endpoints[nowDataNumber-1];
 				}
-
-				sketchGeometry.setDrawRange(sketch_start,sketch_range);
-				//				console.log("sketch_start - sketch_end ",sketch_start,sketch_range);
-				//				console.log("sketch_endpoints ",sketch_endpoints);
+				depthGeometry.setDrawRange(d_start,d_range);
+				sketchGeometry.setDrawRange(s_start,s_range);
 			}
 
 			//DOM側から実行する関数
