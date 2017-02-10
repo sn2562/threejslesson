@@ -31,19 +31,19 @@
 
 			//load Files
 			var dataPath = [
-				'data/13_0_3.dsddata.txt',
+				//				'data/13_0_3.dsddata.txt',
 				//				'data/13_9_39.dsddata.txt',
-				'data/14_56_24.dsddata.txt'
-				//				'data/box1.dsddata.txt',
-				//				'data/dancefigure.txt',
-				//				'data/takeu.txt',
-				//				'data/guitar.txt',
+				//				'data/14_56_24.dsddata.txt'
+//								'data/box1.dsddata.txt',
+//								'data/dancefigure.txt',
+								'data/takeu.txt',
+								'data/guitar.txt',
 				//				'data/todai_n.txt',
 				//				'data/gohan.txt',
-				//				'data/cafe-en.txt',
+								'data/cafe-en.txt',
 				//				'data/box_inn.txt',
 				//				'data/plaster.txt',
-				//				'data/gyrowheel.txt'
+								'data/gyrowheel.txt'
 			];//読み込みファイル一覧
 
 			//DOM
@@ -59,7 +59,7 @@
 			var zoom = 0.8;
 			var width=640*zoom;
 			var height=480*zoom;
-			var z0 = (height/2)/Math.tan(Math.PI/8);
+			var z0 = (height/2)/Math.tan(Math.PI/8)*2;//z0は元の座標系における原点に合うように設定.*2でスケッチ空間の中央に原点を移動
 
 			var renderer;
 			var scene;
@@ -115,8 +115,7 @@
 
 				// Camera
 				camera = new THREE.PerspectiveCamera(45, width/height, 10, 150000);
-				camera.position.set(0,0,0);
-//				camera.position.set(0,0,z0);
+				camera.position.set(0,0,z0);
 
 				// create octree
 
@@ -477,8 +476,7 @@
 					//座標情報
 					var px = parseFloat(d[0]);
 					var py = parseFloat(d[1]);
-					var pz = parseFloat(d[2]*-1);
-//					var pz = parseFloat(d[2]*-1+z0);
+					var pz = parseFloat(d[2]*-1+z0);
 
 					dData.vertices.push(new THREE.Vector3(px,py,pz));
 				}
@@ -515,8 +513,7 @@
 					for(var j=2 ; j<d.length ; j=j+3){
 						var px = parseFloat(d[j]);
 						var py = parseFloat(d[j+1]);
-						var pz = parseFloat(d[j+2]*-1);
-//						var pz = parseFloat(d[j+2]*-1+z0);
+						var pz = parseFloat(d[j+2]*-1+z0);
 						var p = new THREE.Vector3(px,py,pz);
 						points.push(p);
 					}
