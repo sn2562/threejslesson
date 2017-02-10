@@ -70,7 +70,7 @@
 
 			//depthdata
 			var depthGeometry = null;
-			
+
 			//sketchdata
 			var sketchGeometry;
 
@@ -143,7 +143,6 @@
 				group = new THREE.Object3D();
 
 				//Depth Objects with Buffer Geometry
-				//TODO alldataに含まれる全てのデータについてcolorsを結合したものとverticesを結合したものそれぞれを使用できるようにする
 				var depthPoints = [];
 				var depthColor = [];
 				for(var i=0;i<allData.length;i++){
@@ -157,38 +156,30 @@
 					}
 					depth_endpoints.push(depthPoints.length/3);
 				}
-
 				depthGeometry = new THREE.BufferGeometry();
 				depthGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( depthPoints ), 3 ) );
 				depthGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( depthColor ), 3 ) );
 
 				var depthMaterial = new THREE.PointsMaterial( { size: 15, vertexColors: THREE.VertexColors } );
 				depthPoints = new THREE.Points( depthGeometry, depthMaterial );
-				group.add( depthPoints );
-				//				console.log("group "+group.children[0]);
+				//				group.add( depthPoints );
 
-				//Test Line Objects 2
+				//Line Objects
 
 				sketchGeometry = new THREE.BufferGeometry();
 				var tmaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors,linewidth: 10});
 
-				var positions = [];
-				var colors = [];
 				var next_positions_index = 0;
-				//				var colors = [];
 				var indices_array = [];
 
 				function add_vertex(v,datanum,idx) {
 					if (next_positions_index == 0xffff) throw new Error("Too many points");
 					var rgb = allData[datanum].sketchData.colors[idx].toArray();
 
-					//全てのデータにまたがっている部分
-					positions.push(v.x, v.y, v.z);//頂点情報
-					colors.push(rgb[0],rgb[1],rgb[2]);//BGRの順に登録
-
 					//個々のデータにもとづいている部分
 					allData[datanum].sketchData.positions_.push(v.x, v.y, v.z);//BGRの順に登録
-					allData[datanum].sketchData.colors_.push(rgb[2],rgb[1],rgb[0]);//BGRの順に登録
+					allData[datanum].sketchData.colors_.push(rgb[0],rgb[1],rgb[2]);//BGRの順に登録
+
 					return next_positions_index++;
 				}
 
@@ -226,13 +217,15 @@
 				sketchGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );
 
 				//すべてのデータについて、色情報と構成点情報を追加する
-				pposition = [];
-
+				var sketchPositions = [];
+				var sketchColors = [];
 				for(var i=0;i<allData.length;i++){
-					pposition.push();
+					sketchPositions = sketchPositions.concat(allData[i].sketchData.positions_);
+					sketchColors = sketchColors.concat(allData[i].sketchData.colors_);
 				}
-				sketchGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( positions ), 3 ) );
-				sketchGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array(colors ), 3 ) );
+
+				sketchGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( sketchPositions ), 3 ) );
+				sketchGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( sketchColors ), 3 ) );
 
 				mesh = new THREE.LineSegments( sketchGeometry, tmaterial );
 
@@ -240,7 +233,7 @@
 				parent_node.add(mesh);
 
 
-				//				group.add( parent_node );//add sketch data
+				group.add( parent_node );//add sketch data
 				scene.add(group);
 
 				changeDrawData(nowDataNumber);//描画範囲を現在のデータのみに絞る
@@ -541,8 +534,6 @@
 				//sketch data
 				var s_start = 0;
 				var s_range = sketch_endpoints[nowDataNumber];
-
-				console.log("depth_endpoints ",depth_endpoints);
 
 				if(nowDataNumber != 0){
 					d_start = depth_endpoints[nowDataNumber-1];
