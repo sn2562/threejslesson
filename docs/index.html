@@ -27,6 +27,9 @@
 		<script>
 			/* ***** 開発用 ***** */
 
+			var startTime = new Date().getTime();//開始時間
+			console.log(startTime);
+
 			//load Files
 			var dataPath = [
 				'data/13_0_3.dsddata.txt',
@@ -52,7 +55,6 @@
 			var controls;
 			var octree;
 			var isDragging = false;
-
 
 			//constract
 			var zoom = 0.8;
@@ -86,6 +88,14 @@
 			var allData = [];
 			var sketch_endpoints = [];//データの区切り位置を保存
 
+			//Animation
+			var isAnimation = true;//animation mode
+			var animOrder = [0,1,2,1];//読み込みデータに応じて表示順序を指示
+			var animIndex = 0;//
+			//calc framerate
+			var fps = 20;//
+			var oldFrame = 0;
+			var isFrameChange = false;
 
 
 			//HTMLが読み込まれたら実行
@@ -296,10 +306,21 @@
 				function animate() {
 					requestAnimationFrame(animate);
 					controls.update();
-					//					render();
+					if(isAnimation)
+						render();
+
 				}
 
 				function render() {
+					if(isAnimation){
+						var frame = Math.floor( (new Date().getTime() - startTime) / ( 1000 / fps ) );
+						if(oldFrame != frame){//フレームが切り替わっていたら実行
+							console.log("aaa");
+							changeDrawData(animOrder[animIndex%animOrder.length]);
+							animIndex++;
+							oldFrame = frame;
+						}
+					}
 					renderer.render(scene, camera);
 				}
 
@@ -560,9 +581,6 @@
 				sketchGeometry.setDrawRange(sketch_start,sketch_range);
 				//				console.log("sketch_start - sketch_end ",sketch_start,sketch_range);
 				//				console.log("sketch_endpoints ",sketch_endpoints);
-
-				renderer.render(scene, camera);//更新
-				controls.reset();//始点をリセットする
 			}
 
 			//DOM側から実行する関数
@@ -575,9 +593,11 @@
 			}
 			//リストのラジオボタンが押された時に表示データを変更する
 			$(document).on("click",".datalist_contents",function(e) {
-				//TODO 押されたラジオボタンに応じて表示データを変更する
 				var num = $(".datalist_contents").index(this);
 				changeDrawData(num);
+
+				renderer.render(scene, camera);//表示を更新
+				controls.reset();//始点をリセットする
 			});
 		</script>
 
