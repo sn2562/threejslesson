@@ -115,7 +115,8 @@
 
 				// Camera
 				camera = new THREE.PerspectiveCamera(45, width/height, 10, 150000);
-				camera.position.set(0,0,z0);
+				camera.position.set(0,0,0);
+//				camera.position.set(0,0,z0);
 
 				// create octree
 
@@ -476,7 +477,8 @@
 					//座標情報
 					var px = parseFloat(d[0]);
 					var py = parseFloat(d[1]);
-					var pz = parseFloat(d[2]*-1+z0);
+					var pz = parseFloat(d[2]*-1);
+//					var pz = parseFloat(d[2]*-1+z0);
 
 					dData.vertices.push(new THREE.Vector3(px,py,pz));
 				}
@@ -513,7 +515,8 @@
 					for(var j=2 ; j<d.length ; j=j+3){
 						var px = parseFloat(d[j]);
 						var py = parseFloat(d[j+1]);
-						var pz = parseFloat(d[j+2]*-1+z0);
+						var pz = parseFloat(d[j+2]*-1);
+//						var pz = parseFloat(d[j+2]*-1+z0);
 						var p = new THREE.Vector3(px,py,pz);
 						points.push(p);
 					}
