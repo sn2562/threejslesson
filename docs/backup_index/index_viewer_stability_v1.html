@@ -25,31 +25,18 @@
 	</head>
 	<body>
 		<script>
-			/* ***** 開発用 ***** */
-
-			//load Files
-			var dataPath = [
-				//				'data/box1.dsddata.txt',
-				'data/dancefigure.txt',
-				'data/takeu.txt',
-				'data/guitar.txt',
-				//				'data/todai_n.txt',
-				//				'data/gohan.txt',
-				'data/cafe-en.txt',
-				//				'data/box_inn.txt',
-				//				'data/plaster.txt',
-				'data/gyrowheel.txt'
-			];//読み込みファイル一覧
-
+			/* ***** 一枚のスケッチデータを読み込むビューワー ***** */
+			
 			//DOM
 			var container;
 
-
 			//操作
-			var controls;
+			var controls; 
 			var octree;
 			var isDragging = false;
 
+
+			//PCD
 
 			//constract
 			var zoom = 0.8;
@@ -57,44 +44,22 @@
 			var height=480*zoom;
 			var z0 = (height/2)/Math.tan(Math.PI/8);
 
-
-			var renderer;
-			var scene;
-			var camera;
-
-			//depthdata
 			var dgeometry = null;
 			var dmaterial = null;
 			var group = null;
-			//sketchdata
-			var sketchGeometry;
 
-
-			//Data
 			var depthData = {
 				"points": 0,
 				"vertices": [],
 				"colors": []
 			};
-			var depthDataRange = [];
-			var sketchDataRange = [];
-			var nowDataNumber = 0;
-
-			var allData = [];
-			var sketch_endpoints = [];//データの区切り位置を保存
-
-
-
-			//HTMLが読み込まれたら実行
-			window.addEventListener('load', init, false);
-			window.onload = function() { 
-				if (navigator.userAgent.indexOf('iPhone') > 0 || navigator.userAgent.indexOf('iPad') > 0 || navigator.userAgent.indexOf('iPod') > 0 || navigator.userAgent.indexOf('Android') > 0) {
-					//スマートフォン時に実行したいjs
-					//					setTimeout(function(){
-					//						window.scrollTo(0,1);
-					//					}, 1);
-				}
-			}
+			var sketchData = {
+				"lines": 0,
+				"vertices": [],
+				"colors": [],
+				"colors_": [],
+				"lineWidth":[]
+			};
 
 			function ready(){
 
@@ -105,11 +70,11 @@
 
 
 				// Scene
-				scene = new THREE.Scene();
+				var scene = new THREE.Scene();
 
 
 				// Camera
-				camera = new THREE.PerspectiveCamera(45, width/height, 10, 150000);
+				var camera = new THREE.PerspectiveCamera(45, width/height, 10, 150000);
 				camera.position.set(0,0,z0);
 
 				// create octree
@@ -138,114 +103,82 @@
 				group = new THREE.Object3D();
 				dgeometry = new THREE.Geometry();
 				dgeometry.dynamic = true;
-				//TODO alldataに含まれる全てのデータについてcolorsを結合したものとverticesを結合したものそれぞれを使用できるようにする
 				dgeometry.colors = depthData.colors;
 				dgeometry.vertices = depthData.vertices;
 				var dmaterial = new THREE.PointsMaterial({
 					size: 10,
 					vertexColors: true
 				});
-
 				particles = new THREE.Points(dgeometry, dmaterial);
 				//				group.add(particles);//add depth data
 
 				//Test Line Objects 2
 
-				sketchGeometry = new THREE.BufferGeometry();
+				var tgeometry = new THREE.BufferGeometry();
 				var tmaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors,linewidth: 10});
 
 				var positions = [];
-				var colors = [];
 				var next_positions_index = 0;
 				//				var colors = [];
 				var indices_array = [];
 
-				function add_vertex(v,datanum,idx) {
+				function add_vertex(v,idx) {
 					if (next_positions_index == 0xffff) throw new Error("Too many points");
-					var rgb = allData[datanum].sketchData.colors[idx].toArray();
 
-					//全てのデータにまたがっている部分
-					positions.push(v.x, v.y, v.z);//頂点情報
-					colors.push(rgb[0],rgb[1],rgb[2]);//BGRの順に登録
+					positions.push(v.x, v.y, v.z);
+					//色情報を追加する
+					//					colors.push(Math.random()*0.5+0.5, Math.random()*0.5+0.5, 1);//
 
-					//此処のデータにもとづいている部分
-					allData[datanum].sketchData.positions_.push(v.x, v.y, v.z);//BGRの順に登録
-					allData[datanum].sketchData.colors_.push(rgb[2],rgb[1],rgb[0]);//BGRの順に登録
+					//color情報からidxに相当するTHREE.colorを抜き出し、hsl値に変換して登録する
+
+					var rgb = sketchData.colors[idx].toArray();//だめ
+					sketchData.colors_.push(rgb[2],rgb[1],rgb[0]);//BGRの順に登録
+
 					return next_positions_index++;
 				}
 				// simple Koch curve
 
-				function snowflake_iteration(p0, p4, depth,datanum,idx) {
+				function snowflake_iteration(p0, p4, depth,idx) {
 					if (--depth < 0) {
 						var i = next_positions_index-1; // p0 already there
-						add_vertex(p4,datanum,idx);
+						add_vertex(p4,idx);
 						indices_array.push(i, i+1);
 						return;
 					}
 				}
 
-				function snowflake(points, loop, x_offset,datanum,idx) {
-					add_vertex(points[0],datanum,idx);
+				function snowflake(points, loop, x_offset,idx) {
+					add_vertex(points[0],idx);
 					for (var p_index=0, p_count=points.length-1; p_index != p_count; ++p_index) {
-						snowflake_iteration(points[p_index], points[p_index+1], 0,datanum,idx);
+						snowflake_iteration(points[p_index], points[p_index+1], 0,idx);
 					}
 				}
 
 				//矩形の生成
-				for(var i=0;i<allData.length;i++){
-					for(var j=0;j<allData[i].sketchData.lines;j++){
-						if(allData[i].sketchData.vertices[j].length!=0){//線が登録されていれば
-							snowflake
-							(
-								allData[i].sketchData.vertices[j],
-								false, 600,i,j
-							);
-						}
+				for(var i=0; i<sketchData.lines;i++){
+					if(sketchData.vertices[i].length!=0){//線が登録されていれば
+						snowflake
+						(
+							sketchData.vertices[i],
+							false, 600,i
+						);
 					}
-					//endpointsを記録する
-					sketch_endpoints.push(indices_array.length);
 				}
-				sketchGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );
+				tgeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );
+				tgeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( positions ), 3 ) );
+				//				tgeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array(colors), 3 ) );//なんか綺麗なやつ
+				tgeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array(sketchData.colors_), 3 ) );
 
-				//すべてのデータについて、色情報と構成点情報を追加する
-				pposition = [];
-
-				for(var i=0;i<allData.length;i++){
-					pposition.push();
-				}
-				sketchGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( positions ), 3 ) );
-				sketchGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array(colors ), 3 ) );
-
-
-				//描画範囲を.setDrawRange(開始位置,範囲)で決める
-				var sketch_start = 0;
-				var sketch_range = sketch_endpoints[nowDataNumber];//おおよそのスケッチ範囲 
-
-				//開始と範囲を決める
-				if(nowDataNumber == 0){
-					sketch_start = 0;
-				}else{
-					sketch_start = sketch_endpoints[nowDataNumber-1];
-					sketch_range = sketch_range - sketch_endpoints[nowDataNumber-1]
-				}
-
-				sketchGeometry.setDrawRange(sketch_start,sketch_range);
-				//				console.log("sketch_start - sketch_end ",sketch_start,sketch_range);
-				//				console.log("sketch_endpoints ",sketch_endpoints);				
+				tgeometry.attributes.position.needsUpdate = true;
+				tgeometry.attributes.color.needsUpdate = true;
+				tgeometry.colors = sketchData.colors;
 
 
 
-
-
-				//				sketchGeometry.attributes.position.needsUpdate = true;//if you want to change the position data values after the first render
-
-				mesh = new THREE.LineSegments( sketchGeometry, tmaterial );
-
+				mesh = new THREE.LineSegments( tgeometry, tmaterial );
 
 				parent_node = new THREE.Object3D();
 				parent_node.add(mesh);
-
-
 
 				group.add( parent_node );//add sketch data
 
@@ -253,7 +186,7 @@
 
 
 				// Renderer
-				renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+				var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 				renderer.setSize(width, height);//画面サイズ
 				renderer.setClearColor(0xFCFBF6, 1);//背景色
 				renderer.setPixelRatio(window.devicePixelRatio);
@@ -277,6 +210,7 @@
 
 				// trackballに変化があった時だけ描画を呼ぶ
 				controls.addEventListener( 'change', render );
+
 
 				//スマホ向けに画面を最大化する
 				if (navigator.userAgent.indexOf('iPhone') > 0 || navigator.userAgent.indexOf('iPad') > 0 || navigator.userAgent.indexOf('iPod') > 0 || navigator.userAgent.indexOf('Android') > 0) {
@@ -371,6 +305,7 @@
 				//					isDragging = true;
 				//				}).on('mousemove', function(e) {
 				//					if(isDragging) {
+				//						console.log("aaa ");
 				//						//画面内ドラッグ	controls.keys = [ 65, 83, 68 ];
 				//						//						var eve = document.createEvent("KeyboardEvent");
 				//						//						eve.initKeyboardEvent("keypress", true, true, window, true, false, false, false, 0, 68);
@@ -387,12 +322,16 @@
 			};
 			function init(){
 				//読み込みの実行
+				var path = [
+					'data/PointCroudData.pcd',
+					'data/Sketch.txt'
+				];
 
 				var dataList = [];
 
-				for (var i = 0; i <= dataPath.length; i++) {
+				for (var i = 0; i <= path.length; i++) {
 					dataList.push($.ajax({ // $.ajaxの戻り値をdataList配列に格納
-						url: dataPath[i]
+						url: path[i]
 					}));
 				}
 				//読み込み終了後の処理
@@ -411,77 +350,20 @@
 					//					}
 
 					//それぞれについて処理する 0番目はPCD,1番目はsketchデータ
-					//ラジオボタンも同時に生成する
-					var element = document.getElementById("datalist");
-					for(var i=0; i<arguments.length-1;i++){
-						perseData(arguments[i][0]);
-
-						//チェックボックスの生成
-						var box = document.createElement('div');
-						box.className = "radio";
-						//ラベルの生成
-						var label = document.createElement('label');
-
-						//radioボタンの生成
-						var button = document.createElement('input');
-						button.type = "radio";
-						button.name = "optionsRadios";
-						button.id = "optionsRadios"+i;
-						button.value = i;
-						button.for = box.name;
-						button.className = "datalist_contents";
-						if(i==0){
-							button.checked = "true"
-						}
-
-						//最後の子要素として追加
-						label.appendChild(button);
-						var num = i+1;
-						label.appendChild(document.createTextNode("SKetch Data "+num));
-						box.appendChild(label);
-						element.appendChild(box);
-
-					}
-					//					persePCD(arguments[0][0]);//デプスデータの準備
-					//					perseSketchData(arguments[1][0]);//スケッチデータの準備
+					persePCD(arguments[0][0]);//デプスデータの準備
+					perseSketchData(arguments[1][0]);//スケッチデータの準備
 					ready();//描画
 				});
 			}
-			function perseData (data){
-				var dataname = data[0];
-				var data = data.split(/\r\n|\r|\n/);// 行ごとに分割
-				var pcd_index = data[1].split(' ').map(Number);//数値に変換
-				var sketch_index = data[2].split(' ').map(Number);//数値に変換
-
-				depthDataRange.push(pcd_index.slice(1, 3));
-				//				sketchDataRange.push(sketch_index.slice(1, 3));
-
-				//PCD部分とSKETCH部分をそれぞれ取り出して、perseする
-				var newData ={"depthData":{},
-							  "sketchData":{}
-							 };
-				allData.push(newData);
-
-				persePCD(data.slice(pcd_index[1], pcd_index[2]));//デプスデータの準備
-				perseSketchData(data.slice(sketch_index[1], sketch_index[2]));//スケッチデータの準備
-			}
 
 			function persePCD(data){
-				//				var data = data.split(/\r\n|\r|\n/);// 行ごとに分割
-
-				var dData = {
-					"points": 0,
-					"vertices": [],
-					"colors": []
-				};
-
+				var data = data.split(/\r\n|\r|\n/);// 行ごとに分割
 				//PCDは10行目から
 				for(var i=10;i<data.length;i++){
 					var d = data[i].split(' ');
 
 					//色情報
 					var c = new THREE.Color(parseInt(d[3]));// color 10進数
-					dData.colors.push(c);
 					depthData.colors.push(c);
 
 					//座標情報
@@ -489,37 +371,24 @@
 					var py = parseFloat(d[1]);
 					var pz = parseFloat(d[2]*-1+z0);
 
-					dData.vertices.push(new THREE.Vector3(px,py,pz));
 					depthData.vertices.push(new THREE.Vector3(px,py,pz));
 				}
-				allData[allData.length-1].depthData = dData;
 			}
-
 			function perseSketchData(data){
 				//スケッチデータの処理
 				//形式 1行ストローク [色 太さ P1座標 P1座標 P2座標 P3座標...]
 
-				var sData = {
-					"lines": 0,
-					"vertices": [],
-					"positions_": [],
-					"colors": [],
-					"colors_": [],
-					"lineWidth":[]
-				};
-
-				sketchDataRange.push(0);
-
+				data = data.split(/\r\n|\r|\n/);// 行ごとに分割
 				for(var i=0;i<data.length;i++){
 					var d = data[i].split(' ');
 
 					//色
 					var c = new THREE.Color(parseInt(d[0]));// color 10進数
-					sData.colors.push(c);
+					sketchData.colors.push(c);
 
 					//線の太さ
 					var w = parseInt(d[1]);// 太さ情報
-					sData.lineWidth.push(w);
+					sketchData.lineWidth.push(w);
 					var points = [];
 
 					//座標情報
@@ -530,36 +399,9 @@
 						var p = new THREE.Vector3(px,py,pz);
 						points.push(p);
 					}
-					sData.vertices.push(points);
-					sketchDataRange[sketchDataRange.length-1] += 3;
+					sketchData.vertices.push(points);
 				}
-				sData.lines = sData.colors.length;
-
-				allData[allData.length-1].sketchData = sData;
-			}
-
-			function changeDrawData(idx){
-				//idx番目のデータに描画を書き換える
-				nowDataNumber = idx;
-
-				//描画範囲を.setDrawRange(開始位置,範囲)で決める
-				var sketch_start = 0;
-				var sketch_range = sketch_endpoints[nowDataNumber];//おおよそのスケッチ範囲 
-
-				//開始と範囲を決める
-				if(nowDataNumber == 0){
-					sketch_start = 0;
-				}else{
-					sketch_start = sketch_endpoints[nowDataNumber-1];
-					sketch_range = sketch_range - sketch_endpoints[nowDataNumber-1]
-				}
-
-				sketchGeometry.setDrawRange(sketch_start,sketch_range);
-				//				console.log("sketch_start - sketch_end ",sketch_start,sketch_range);
-				//				console.log("sketch_endpoints ",sketch_endpoints);
-
-				renderer.render(scene, camera);//更新
-				controls.reset();//始点をリセットする
+				sketchData.lines = sketchData.colors.length;
 			}
 
 			//DOM側から実行する関数
@@ -570,12 +412,17 @@
 			function resetView(){
 				controls.reset();//始点をリセットする
 			}
-			//リストのラジオボタンが押された時に表示データを変更する
-			$(document).on("click",".datalist_contents",function(e) {
-				//TODO 押されたラジオボタンに応じて表示データを変更する
-				var num = $(".datalist_contents").index(this);
-				changeDrawData(num);
-			});
+
+			//HTMLが読み込まれたら実行
+			window.addEventListener('load', init, false);
+			window.onload = function() { 
+				if (navigator.userAgent.indexOf('iPhone') > 0 || navigator.userAgent.indexOf('iPad') > 0 || navigator.userAgent.indexOf('iPod') > 0 || navigator.userAgent.indexOf('Android') > 0) {
+					//スマートフォン時に実行したいjs
+					//					setTimeout(function(){
+					//						window.scrollTo(0,1);
+					//					}, 1);
+				}
+			}
 		</script>
 
 		<!-- show canvas -->
@@ -583,8 +430,8 @@
 
 		<!-- show controles -->
 		<div id="controles">
-			<label class="radio-inline">
-				<input type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1" onclick="changeControl(0)" checked = "true"> PAN/TILT/ROLL
+			<label class="ra3dio-inline">
+				<input type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1" onclick="changeControl(0)"> PAN/TILT/ROLL
 			</label>
 			<label class="radio-inline">
 				<input type="radio" name="inlineRadioOptions" id="inlineRadio2" value="option2" onclick="changeControl(1)"> ZOOM IN/OUT
@@ -599,10 +446,21 @@
 
 
 		<!-- show sketch list -->
-
-		<div id="datalist">
-
-		</div>
-
+		<!--
+<div id="list">
+<div class="radio">
+<label>
+<input type="radio" name="optionsRadios" id="optionsRadios1" value="option1" checked>
+Option one is this and that&mdash;be sure to include why it's great
+</label>
+</div>
+<div class="radio">
+<label>
+<input type="radio" name="optionsRadios" id="optionsRadios2" value="option2">
+Option two can be something else and selecting it will deselect option one
+</label>
+</div>
+</div>
+-->
 	</body>
 </html>
