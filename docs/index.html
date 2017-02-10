@@ -27,8 +27,16 @@
 		<script>
 			//load Files
 			var dataPath = [
-				'data/oikawa2015122219_49_21.dsd20151222_195710.dsddata.txt',
-				'data/c.dsddata.txt'
+				'data/box1.dsddata.txt',
+				'data/dancefigure.txt',
+				'data/takeu.txt',
+				'data/guitar.txt',
+//				'data/todai_n.txt',
+//				'data/gohan.txt',
+				'data/caffeen.txt',
+//				'data/box_inn.txt',
+				'data/plaster.txt',
+				'data/gyrowheel.txt'
 			];//読み込みファイル一覧
 
 			//DOM
@@ -71,7 +79,7 @@
 			var nowDataNumber = 0;
 
 			var allData = [];
-			var endpoints = [];//データの区切り位置を保存
+			var sketch_endpoints = [];//データの区切り位置を保存
 
 
 
@@ -124,11 +132,11 @@
 				drawAxis();
 
 
-				console.log("depthDataRange",depthDataRange);
 				//Depth Objects
 				group = new THREE.Object3D();
 				dgeometry = new THREE.Geometry();
 				dgeometry.dynamic = true;
+				//TODO alldataに含まれる全てのデータについてcolorsを結合したものとverticesを結合したものそれぞれを使用できるようにする
 				dgeometry.colors = depthData.colors;
 				dgeometry.vertices = depthData.vertices;
 				var dmaterial = new THREE.PointsMaterial({
@@ -156,7 +164,7 @@
 
 					//全てのデータにまたがっている部分
 					positions.push(v.x, v.y, v.z);//頂点情報
-					colors.push(rgb[2],rgb[1],rgb[0]);//BGRの順に登録
+					colors.push(rgb[0],rgb[1],rgb[2]);//BGRの順に登録
 
 					//此処のデータにもとづいている部分
 					allData[datanum].sketchData.positions_.push(v.x, v.y, v.z);//BGRの順に登録
@@ -193,7 +201,7 @@
 						}
 					}
 					//endpointsを記録する
-					endpoints.push(indices_array.length);
+					sketch_endpoints.push(indices_array.length);
 				}
 				sketchGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );
 
@@ -209,24 +217,24 @@
 
 				//描画範囲を.setDrawRange(開始位置,範囲)で決める
 				var sketch_start = 0;
-				var sketch_end = endpoints[nowDataNumber];//おおよそのスケッチ範囲 
+				var sketch_range = sketch_endpoints[nowDataNumber];//おおよそのスケッチ範囲 
 
-				//開始地点を
+				//開始と範囲を決める
 				if(nowDataNumber == 0){
 					sketch_start = 0;
 				}else{
-					sketch_start = endpoints[nowDataNumber-1];
+					sketch_start = sketch_endpoints[nowDataNumber-1];
+					sketch_range = sketch_range - sketch_endpoints[nowDataNumber-1]
 				}
 
-				for(var i=0;i<nowDataNumber;i++){
-					sketch_end = sketch_end - endpoints[i];
-					//37352 - 11998
-				}
+				sketchGeometry.setDrawRange(sketch_start,sketch_range);
+				//				console.log("sketch_start - sketch_end ",sketch_start,sketch_range);
+				//				console.log("sketch_endpoints ",sketch_endpoints);				
 
-				sketchGeometry.setDrawRange(sketch_start,sketch_end);
-				console.log("sketch_start",sketch_start,"sketch_end",sketch_end);
 
-				//test
+
+
+
 				//				sketchGeometry.attributes.position.needsUpdate = true;//if you want to change the position data values after the first render
 
 				mesh = new THREE.LineSegments( sketchGeometry, tmaterial );
@@ -361,7 +369,6 @@
 				//					isDragging = true;
 				//				}).on('mousemove', function(e) {
 				//					if(isDragging) {
-				//						console.log("aaa ");
 				//						//画面内ドラッグ	controls.keys = [ 65, 83, 68 ];
 				//						//						var eve = document.createEvent("KeyboardEvent");
 				//						//						eve.initKeyboardEvent("keypress", true, true, window, true, false, false, false, 0, 68);
@@ -438,35 +445,6 @@
 					ready();//描画
 				});
 			}
-			function changeDrawData(idx){
-				//idx番目のデータに描画を書き換える
-
-				nowDataNumber = idx;
-
-				//描画範囲を.setDrawRange(開始位置,範囲)で決める
-				var sketch_start = 0;
-				var sketch_end = endpoints[nowDataNumber];//おおよそのスケッチ範囲 
-
-				//開始地点を
-				if(nowDataNumber == 0){
-					sketch_start = 0;
-				}else{
-					sketch_start = endpoints[nowDataNumber-1];
-				}
-
-				for(var i=0;i<nowDataNumber;i++){
-					sketch_end = sketch_end - endpoints[i];
-					//37352 - 11998
-				}
-
-				sketchGeometry.setDrawRange(sketch_start,sketch_end);
-				console.log("sketch_start",sketch_start,"sketch_end",sketch_end);
-
-				//更新
-				renderer.render(scene, camera);
-				controls.reset();//始点をリセットする
-			}
-
 			function perseData (data){
 				var dataname = data[0];
 				var data = data.split(/\r\n|\r|\n/);// 行ごとに分割
@@ -514,6 +492,7 @@
 				}
 				allData[allData.length-1].depthData = dData;
 			}
+
 			function perseSketchData(data){
 				//スケッチデータの処理
 				//形式 1行ストローク [色 太さ P1座標 P1座標 P2座標 P3座標...]
@@ -557,6 +536,30 @@
 				allData[allData.length-1].sketchData = sData;
 			}
 
+			function changeDrawData(idx){
+				//idx番目のデータに描画を書き換える
+				nowDataNumber = idx;
+
+				//描画範囲を.setDrawRange(開始位置,範囲)で決める
+				var sketch_start = 0;
+				var sketch_range = sketch_endpoints[nowDataNumber];//おおよそのスケッチ範囲 
+
+				//開始と範囲を決める
+				if(nowDataNumber == 0){
+					sketch_start = 0;
+				}else{
+					sketch_start = sketch_endpoints[nowDataNumber-1];
+					sketch_range = sketch_range - sketch_endpoints[nowDataNumber-1]
+				}
+
+				sketchGeometry.setDrawRange(sketch_start,sketch_range);
+				//				console.log("sketch_start - sketch_end ",sketch_start,sketch_range);
+				//				console.log("sketch_endpoints ",sketch_endpoints);
+
+				renderer.render(scene, camera);//更新
+				controls.reset();//始点をリセットする
+			}
+
 			//DOM側から実行する関数
 			function changeControl(state){
 				//var STATE = { NONE: - 1, ROTATE: 0, ZOOM: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4 };
@@ -567,9 +570,7 @@
 			}
 			//リストのラジオボタンが押された時に表示データを変更する
 			$(document).on("click",".datalist_contents",function(e) {
-				//				console.log("tes "+e.target.idx );
 				//TODO 押されたラジオボタンに応じて表示データを変更する
-				//				changeDrawData($(".datalist_contents").index(target));
 				var num = $(".datalist_contents").index(this);
 				changeDrawData(num);
 			});
