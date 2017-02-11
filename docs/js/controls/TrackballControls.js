@@ -437,6 +437,8 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 		}
 
+		mouseDragg(event,1);
+
 		document.addEventListener( 'mousemove', mousemove, false );
 		document.addEventListener( 'mouseup', mouseup, false );
 
@@ -467,7 +469,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 			_panEnd.copy( getMouseOnScreen( event.pageX, event.pageY ) );
 
 		}
-		mouseDragg(event);//どうしてもマウスドラッグ実装できないのでここから無理やり呼び出す
+		mouseDragg(event,0);//どうしてもマウスドラッグ実装できないのでここから無理やり呼び出す
 
 		//		}
 
@@ -555,6 +557,8 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 		}
 
+		mouseDragg(event,1);//どうしてもマウスドラッグ実装できないのでここから無理やり呼び出す
+
 		_this.dispatchEvent( startEvent );
 
 	}
@@ -587,7 +591,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 				break;
 
 		}
-		mouseDragg(event);//どうしてもマウスドラッグ実装できないのでここから無理やり呼び出す
+		mouseDragg(event,0);//どうしてもマウスドラッグ実装できないのでここから無理やり呼び出す
 
 		//		}
 

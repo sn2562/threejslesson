@@ -37,7 +37,7 @@
 				//				'data/13_0_3.dsddata.txt',
 				//				'data/13_9_39.dsddata.txt',
 				//				'data/14_56_24.dsddata.txt'
-				//								'data/box1.dsddata.txt',
+												'data/box1.dsddata.txt',
 				//								'data/dancefigure.txt',
 				//				'data/takeu.txt',
 				//				'data/guitar.txt',
@@ -86,6 +86,7 @@
 			var nowDataNumber = 0;
 
 			var allData = [];
+			var indices_array = [];//スケッチデータのどの点同士をつなぐか
 			var sketch_endpoints = [];//データの区切り位置を保存
 			var depth_endpoints = [];//データの区切り位置を保存
 
@@ -94,12 +95,14 @@
 			var usersSketchData =  {
 				"maxpoints": 1000,
 				"lines": 0,
-				"vertices": [],
+				"vertices": [[]],
 				"positions_": [],
-				"colors": [],
+				"colors": [[]],
 				"colors_": [],
-				"lineWidth":[]
+				"lineWidth":[],
+				"indices_array":[]
 			};
+			var usersSketchGeometry;
 
 			//Animation
 			var isAnimation = false;//animation mode
@@ -187,50 +190,51 @@
 				var depthMaterial = new THREE.PointsMaterial( { size: 15, vertexColors: THREE.VertexColors, opacity:0.45 } );
 				mesh_d = new THREE.Points( depthGeometry, depthMaterial );
 				//				group.add( mesh_d );
-				scene.add( mesh_d );
+				//				scene.add( mesh_d );
 
 				//Line Objects
 
 				sketchGeometry = new THREE.BufferGeometry();
-				var tmaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors,linewidth: 10});
+				var tmaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors,linewidth: 1});
 
-				var next_positions_index = 0;
-				var indices_array = [];
+				//sketchlineの生成
+				indices_array = [];//構成点をどうやってつなぐか
 
-				function add_vertex(v,datanum,idx) {
-					if (next_positions_index == 0xffff) throw new Error("Too many points");
-					var rgb = allData[datanum].sketchData.colors[idx].toArray();
+				var next = 0;
+				for( var i=0; i<allData.length ; i++){//全ての登録データについて行う
+					for( var j=0 ; j<allData[i].sketchData.vertices.length ; j++){//全ての線点について行う
+						if(allData[i].sketchData.vertices[j].length != 0){//構成点があるなら実行
 
-					//個々のデータにもとづいている部分
-					allData[datanum].sketchData.positions_.push(v.x, v.y, v.z);//BGRの順に登録
-					allData[datanum].sketchData.colors_.push(rgb[0],rgb[1],rgb[2]);//BGRの順に登録
+							//最初の座標
+							var p = allData[i].sketchData.vertices[j][0];
+							allData[i].sketchData.positions_.push(p.x,p.y,p.z);//最初の点を追加する
 
-					return next_positions_index++;
-				}
+							//線の色
+							var rgb = allData[i].sketchData.colors[j].toArray();
+							allData[i].sketchData.colors_.push(rgb[0],rgb[1],rgb[2]);;//最初の色を追加する
 
-				function snowflake(points, loop, x_offset,datanum,idx) {
-					add_vertex(points[0],datanum,idx);
-					for (var p_index=0, p_count=points.length-1; p_index != p_count; ++p_index) {
-						var i = next_positions_index-1; // p0 already there
-						add_vertex(points[p_index+1],datanum,idx);
-						indices_array.push(i, i+1);
-					}
-				}
+							//最初の点以降を全て追加する
+							for( var k=1 ; k<allData[i].sketchData.vertices[j].length ; k++ ){//線を構成する最後の点まで参照する
+								//座標
+								var p = allData[i].sketchData.vertices[j][k];
+								allData[i].sketchData.positions_.push(p.x,p.y,p.z); //構成点を追加
 
-				//矩形の生成
-				for(var i=0;i<allData.length;i++){
-					for(var j=0;j<allData[i].sketchData.lines;j++){
-						if(allData[i].sketchData.vertices[j].length!=0){//線が登録されていれば
-							snowflake
-							(
-								allData[i].sketchData.vertices[j],
-								false, 600,i,j
-							);
+								//色
+								allData[i].sketchData.colors_.push(rgb[0],rgb[1],rgb[2]);;//線の色を
+
+								//次の点の登録添字
+								next = next+1;
+								indices_array.push( next-1, next );//ひとつ前の登録点とつなぐように設定
+							}
+							next++;//線の区切り添字を一つ次に飛ばして、前の線と連結されないようにする
 						}
 					}
-					//endpointsを記録する
-					sketch_endpoints.push(indices_array.length);
+					allData[i].sketchData.endpoint = indices_array.length;
+					sketch_endpoints.push(indices_array.length);//データごとの区切り - endpointsを記録する
+					//ちなみに、endpointは lineの構成点総数*2 - line数*2 で計算できる(はず)
 				}
+				//データごとの区切りを登録
+
 				sketchGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );
 
 				//すべてのデータについて、色情報と構成点情報を追加する
@@ -248,7 +252,7 @@
 				mesh_s.scale.set( 1.05,1.05,1.05 );//スケッチをちょっと大きくする
 				mesh_s.position.set( 0,0,1 );//デプスデータよりも手前にずらす
 
-				//				scene.add( mesh_s );
+				scene.add( mesh_s );
 
 				//				parent_node = new THREE.Object3D();
 				//				parent_node.add(mesh);
@@ -263,22 +267,19 @@
 
 
 				//test users line sketching
-				//			var maxpoints = 30;
+				var maxpoints = 60;
 				var usGeometry = new THREE.BufferGeometry();
 				var usPositions = new Float32Array(usersSketchData.maxpoints * 3);//頂点の場所を格納していくarrayを用意
 
 				usGeometry.addAttribute('position', new THREE.BufferAttribute(usPositions, 3));
 				var array = usGeometry.attributes.position.array;
-				array[0] = -100;    //x1
-				array[1] = 0;       //y1
-				array[2] = 0;       //z1
-				array[3] = 100;     //x2
-				array[4] = 0;       //y2
-				array[5] = 0;       //z2
-				array[6] = 0;     //x2
-				array[7] = 100;       //y2
-				array[8] = 0;       //z2
-				//				usGeometry.addGroup(0, 2, 0);
+
+				indices_array = [0,1,1,2,2,3];
+				for(var i=0;i*3+2<maxpoints;i++){
+					array[i*3] = 100*i;    //x1
+					array[i*3+1] = 100*(i%2);    //x1
+				}
+				usGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );
 
 				var usMaterial = new THREE.LineBasicMaterial({ color: 0x990000, linewidth : 5});
 				usetLine = new THREE.Line(usGeometry, usMaterial);
@@ -327,6 +328,10 @@
 
 				render();//描画
 				animate();
+
+
+				console.log("depthData",allData[0].depthData);
+				console.log("sketchdata",allData[0].sketchData);
 
 				///////////////////////////////////////
 				//				canvas.addEventListener("touchstart",onDown(),false);
@@ -378,6 +383,7 @@
 
 					var newheight = height*window.innerWidth/width;
 					renderer.setSize(window.innerWidth, newheight);
+
 				}
 				function onMouseMove(event){
 					console.log("onMouseMove");
@@ -475,24 +481,6 @@
 							break;
 					}
 				});
-
-				//				$(renderer.domElement).on('mousedown', function(e) {
-				//					isDragging = true;
-				//				}).on('mousemove', function(e) {
-				//					if(isDragging) {
-				//						//画面内ドラッグ	controls.keys = [ 65, 83, 68 ];
-				//						//						var eve = document.createEvent("KeyboardEvent");
-				//						//						eve.initKeyboardEvent("keypress", true, true, window, true, false, false, false, 0, 68);
-				//						//						renderer.domElement.dispatchEvent(eve);
-				//
-				//						//						controls.changeState();
-				//
-				//					}
-				//				});
-				//				
-				//				$(document).on('mouseup', function(e) {
-				//					isDragging = false;
-				//				});
 			};
 			function init(){
 				//読み込みの実行
@@ -610,7 +598,8 @@
 					"positions_": [],
 					"colors": [],
 					"colors_": [],
-					"lineWidth":[]
+					"lineWidth":[],
+					"endpoint":[]
 				};
 
 				for(var i=0;i<data.length;i++){
@@ -649,14 +638,14 @@
 				var d_range = depth_endpoints[nowDataNumber];
 				//sketch data
 				var s_start = 0;
-				var s_range = sketch_endpoints[nowDataNumber];
+				var s_range = allData[nowDataNumber].sketchData.endpoint;
 
 				if(nowDataNumber != 0){
 					d_start = depth_endpoints[nowDataNumber-1];
 					d_range = d_range - depth_endpoints[nowDataNumber-1];
 
-					s_start = sketch_endpoints[nowDataNumber-1];
-					s_range = s_range - sketch_endpoints[nowDataNumber-1];
+					s_start = allData[nowDataNumber-1].sketchData.endpoint;
+					s_range = s_range - allData[nowDataNumber-1].sketchData.endpoint;
 				}
 				depthGeometry.setDrawRange(d_start,d_range);
 				sketchGeometry.setDrawRange(s_start,s_range);
@@ -693,9 +682,91 @@
 				}
 			})
 
-			function mouseDragg(event){
+			function mouseDragg(event,mode){
 				//かなしいかな...ドラッグイベントが実装できないので無理やりTrackballControlsから呼び出す
-				console.log("dragg");
+				//mode:0 ドラッグ mode:1 クリック(ドラッグの開始)
+
+				if(mode==1){
+					//新しいスケッチストロークを追加
+					if(usersSketchData.vertices[usersSketchData.vertices.length-1].length!=0){//前の線に座標が含まれていたら線を新しく追加
+						usersSketchData.vertices.push([]);
+					}
+				}
+				var rect = event.target.getBoundingClientRect();
+
+				//スケッチモードで対象がキャンバスなら実行する
+				if(sketchMode && width == rect.width){
+					event.preventDefault();
+					mouse.x = (event.clientX-rect.left)/width *2 - 1;
+					mouse.y = -(event.clientY-rect.top)/height *2 + 1;
+
+					//マウスの2D座標から、depthDataに登録されているマウス位置の該当indexのデプスを引き抜く
+					var x = parseInt(event.clientX-rect.left);
+					var y = parseInt(event.clientY-rect.top);
+					var index = x + y * width;
+					var p = allData[nowDataNumber].depthData.vertices[index];
+					usersSketchData.vertices[usersSketchData.vertices.length-1].push(p);
+
+					//raycaster
+					raycaster.setFromCamera( mouse, camera );
+
+					var intersects = raycaster.intersectObject( mesh_d );
+					if ( intersects.length > 0 ) {
+
+						var intersect = intersects[ 0 ];
+						var face = intersect.face;
+
+						//						var linePosition = line.geometry.attributes.position;//あわせるメッシュ
+						var meshPosition = mesh_d.geometry.attributes.position;//マウス位置のメッシュ
+						//
+						//						linePosition.copyAt( 0, meshPosition, face.a );
+						//						linePosition.copyAt( 1, meshPosition, face.b );
+						//						linePosition.copyAt( 2, meshPosition, face.c );
+						//						linePosition.copyAt( 3, meshPosition, face.a );
+
+						mesh_d.updateMatrix();
+						//						line.geometry.applyMatrix( mesh.matrix );
+						//						line.visible = true;
+					}
+				}
+				//TODO ユーザスケッチの表示をし直す
+
+				//データの加工
+				//矩形の生成
+				//				for(var j=0;j<usersSketchData.vertices.length;j++){//スケッチデータのline数だけ行う
+				//					if(usersSketchData.vertices[j].length!=0){//線に座標が登録されていれば
+				//						snowflake
+				//						(
+				//							usersSketchData.vertices[j],//その線について
+				//							j
+				//						);
+				//					}
+				//				}
+
+				var next_positions_index = 0;
+				var indices_array = [];
+
+				//				function add_vertex(v,idx) {
+				//					if (next_positions_index == 0xffff) throw new Error("Too many points");
+				//					//					var rgb = usersSketchData.colors[idx].toArray();
+				//
+				//					//個々のデータにもとづいている部分
+				//					usersSketchData.positions_.push(v.x, v.y, v.z);//BGRの順に登録
+				//					//					usersSketchData.colors_.push(rgb[0],rgb[1],rgb[2]);//BGRの順に登録
+				//					return next_positions_index++;
+				//				}
+				//
+				//				function snowflake(points,idx) {
+				//					add_vertex(points[0],idx);
+				//					for (var p_index=0; p_index != points.length-1; ++p_index) {
+				//						var i = next_positions_index-1; // p0 already there
+				//						add_vertex(points[p_index+1],idx);
+				//						indices_array.push(i, i+1);
+				//					}
+				//					usersSketchGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );
+				//
+				//				}
+
 			}
 		</script>
 
