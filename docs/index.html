@@ -323,6 +323,22 @@
 
 				///////////////////////////////////////
 				document.getElementById("canvas").addEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.getElementById("canvas").addEventListener( 'mousedown', function(e) {isDragging = true;});
+				document.getElementById("canvas").addEventListener( 'mouseup', function(e) {isDragging = false;});
+
+				//				$(renderer.domElement).on('mousedown', function(e) {
+				//					isDragging = true;
+				//				}).on('mousemove', function(e) {
+				//					if(isDragging) {
+				//						//画面内ドラッグ	controls.keys = [ 65, 83, 68 ];
+				//						//						var eve = document.createEvent("KeyboardEvent");
+				//						//						eve.initKeyboardEvent("keypress", true, true, window, true, false, false, false, 0, 68);
+				//						//						renderer.domElement.dispatchEvent(eve);
+				//
+				//						//						controls.changeState();
+				//
+				//					}
+				//				});
 
 				function animate() {
 					requestAnimationFrame(animate);
@@ -374,6 +390,10 @@
 
 					//対象がキャンバスなら実行する
 					if(width == rect.width){
+						console.log("isDragging ",isDragging);
+						if(isDragging){
+							console.log("ドラッグ中");
+						}
 						onCanvas = true;
 						event.preventDefault();
 						mouse.x = (event.clientX-rect.left)/width *2 - 1;
@@ -462,24 +482,6 @@
 							break;
 					}
 				});
-
-				//				$(renderer.domElement).on('mousedown', function(e) {
-				//					isDragging = true;
-				//				}).on('mousemove', function(e) {
-				//					if(isDragging) {
-				//						//画面内ドラッグ	controls.keys = [ 65, 83, 68 ];
-				//						//						var eve = document.createEvent("KeyboardEvent");
-				//						//						eve.initKeyboardEvent("keypress", true, true, window, true, false, false, false, 0, 68);
-				//						//						renderer.domElement.dispatchEvent(eve);
-				//
-				//						//						controls.changeState();
-				//
-				//					}
-				//				});
-				//				
-				//				$(document).on('mouseup', function(e) {
-				//					isDragging = false;
-				//				});
 			};
 			function init(){
 				//読み込みの実行
@@ -665,13 +667,15 @@
 				renderer.render(scene, camera);//表示を更新
 				controls.reset();//始点をリセットする
 			})
+			//スケッチボタンが押されたら
 			$(document).on("change","#changeMode",function(e) {
 				sketchMode = !sketchMode; // sketching/viewing
+				controls.enabled = !sketchMode;
 			})
 		</script>
 
 		<!-- show canvas -->
-		<div id="canvas" draggable="true" ondrag="myFunction(event)"></div>
+		<div id="canvas" draggable="true" ondrag=""></div>
 
 		<!-- show controles -->
 		<div id="controles">
