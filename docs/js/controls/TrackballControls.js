@@ -10,13 +10,15 @@ THREE.TrackballControls = function ( object, domElement ) {
 	var _this = this;
 	var STATE = { NONE: - 1, ROTATE: 0, ZOOM: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4 };
 
+	var printLog = false;//確認用
+
 	this.object = object;
 	this.domElement = ( domElement !== undefined ) ? domElement : document;
 
 	// API
 
 	this.enabled = true;
-	//	this.pause = false;//動作を一時的にposeする
+	this.pause = false;//動作を一時的にposeする
 
 	this.screen = { left: 0, top: 0, width: 0, height: 0 };
 
@@ -295,6 +297,9 @@ THREE.TrackballControls = function ( object, domElement ) {
 	};
 
 	this.update = function () {
+		if(printLog)
+			console.log("update");
+
 		if(_this.enable) return;
 
 		_eye.subVectors( _this.object.position, _this.target );
@@ -334,6 +339,8 @@ THREE.TrackballControls = function ( object, domElement ) {
 	};
 
 	this.reset = function () {
+		if(printLog)
+			console.log("reset");
 
 		_state = STATE.NONE;
 		_prevState = STATE.NONE;
@@ -388,6 +395,8 @@ THREE.TrackballControls = function ( object, domElement ) {
 	}
 
 	function keyup( event ) {
+		if(printLog)
+			console.log("keyup");
 
 		if ( _this.enabled === false ) return;
 
@@ -398,6 +407,8 @@ THREE.TrackballControls = function ( object, domElement ) {
 	}
 
 	function mousedown( event ) {
+		if(printLog)
+			console.log("mousedown");
 		if ( _this.enabled === false ) return;
 
 		event.preventDefault();
@@ -433,12 +444,14 @@ THREE.TrackballControls = function ( object, domElement ) {
 	}
 
 	function mousemove( event ) {
+		if(printLog)
+			console.log("mousemove");
 
 		if ( _this.enabled === false ) return;
 		//		if ( !_this.pause ){
 
-		event.preventDefault();
-		event.stopPropagation();
+		event.preventDefault();//イベントを止める
+		event.stopPropagation();//イベントを止める
 
 		if ( _state === STATE.ROTATE && ! _this.noRotate ) {
 
@@ -459,6 +472,8 @@ THREE.TrackballControls = function ( object, domElement ) {
 	}
 
 	function mouseup( event ) {
+		if(printLog)
+			console.log("mouseup");
 
 		if ( _this.enabled === false ) return;
 		//		if ( !_this.pause ){
@@ -474,39 +489,45 @@ THREE.TrackballControls = function ( object, domElement ) {
 	}
 
 	function mousewheel( event ) {
+		if(printLog)
+			console.log("mousewheel");
 
 		if ( _this.enabled === false ) return;
-		//		if ( !_this.pause ){
+
 
 		event.preventDefault();
 		event.stopPropagation();
+		if ( !_this.pause ){
 
-		switch ( event.deltaMode ) {
+			switch ( event.deltaMode ) {
 
-			case 2:
-				// Zoom in pages
-				_zoomStart.y -= event.deltaY * 0.025;
-				break;
+				case 2:
+					// Zoom in pages
+					_zoomStart.y -= event.deltaY * 0.025;
+					break;
 
-			case 1:
-				// Zoom in lines
-				_zoomStart.y -= event.deltaY * 0.01;
-				break;
+				case 1:
+					// Zoom in lines
+					_zoomStart.y -= event.deltaY * 0.01;
+					break;
 
-			default:
-				// undefined, 0, assume pixels
-				_zoomStart.y -= event.deltaY * 0.00025;
-				break;
+				default:
+					// undefined, 0, assume pixels
+					_zoomStart.y -= event.deltaY * 0.00025;
+					break;
 
+			}
 		}
+
 
 		_this.dispatchEvent( startEvent );
 		_this.dispatchEvent( endEvent );
-		//		}
 
 	}
 
 	function touchstart( event ) {
+		if(printLog)
+			console.log("touchstart");
 
 		if ( _this.enabled === false ) return;
 
@@ -537,6 +558,8 @@ THREE.TrackballControls = function ( object, domElement ) {
 	}
 
 	function touchmove( event ) {
+		if(printLog)
+			console.log("touchmove");
 
 		if ( _this.enabled === false ) return;
 		//		if ( !_this.pause ){
@@ -567,6 +590,8 @@ THREE.TrackballControls = function ( object, domElement ) {
 	}
 
 	function touchend( event ) {
+		if(printLog)
+			console.log("touchend");
 
 		if ( _this.enabled === false ) return;
 
@@ -608,6 +633,21 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 		window.addEventListener( 'keydown', keydown, false );
 		window.addEventListener( 'keyup', keyup, false );
+	}
+	this.stopControl = function(){
+		this.domElement.removeEventListener( 'contextmenu', contextmenu, false );
+		this.domElement.removeEventListener( 'mousedown', mousedown, false );
+		this.domElement.removeEventListener( 'wheel', mousewheel, false );
+
+		this.domElement.removeEventListener( 'touchstart', touchstart, false );
+		this.domElement.removeEventListener( 'touchend', touchend, false );
+		this.domElement.removeEventListener( 'touchmove', touchmove, false );
+
+		document.removeEventListener( 'mousemove', mousemove, false );
+		document.removeEventListener( 'mouseup', mouseup, false );
+
+		window.removeEventListener( 'keydown', keydown, false );
+		window.removeEventListener( 'keyup', keyup, false );
 	}
 
 	this.dispose = function() {
