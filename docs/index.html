@@ -43,7 +43,7 @@
 				//				'data/cafe-en.txt',
 				//				'data/box_inn.txt',
 				//				'data/plaster.txt',
-				'data/takeu.txt'
+				'data/guitar.txt'
 			];//読み込みファイル一覧
 
 			//DOM
@@ -164,7 +164,7 @@
 				depthGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( depthPoints ), 3 ) );
 				depthGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( depthColor ), 3 ) );
 
-				var depthMaterial = new THREE.PointsMaterial( { size: 15, vertexColors: THREE.VertexColors } );
+				var depthMaterial = new THREE.PointsMaterial( { size: 15, vertexColors: THREE.VertexColors, opacity:0.45 } );
 				mesh_d = new THREE.Points( depthGeometry, depthMaterial );
 				//				group.add( mesh_d );
 				scene.add( mesh_d );
@@ -233,7 +233,10 @@
 				sketchGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( sketchColors ), 3 ) );
 
 				mesh_s = new THREE.LineSegments( sketchGeometry, tmaterial );
-				//				scene.add( mesh_s );
+				mesh_s.scale.set( 1.05,1.05,1.05 );//スケッチをちょっと大きくする
+				mesh_s.position.set( 0,0,1 );//デプスデータよりも手前にずらす
+
+				scene.add( mesh_s );
 
 				//				parent_node = new THREE.Object3D();
 				//				parent_node.add(mesh);
@@ -242,7 +245,7 @@
 				mouse = new THREE.Vector2();
 
 				//				group.add( parent_node );//add sketch data
-				scene.add(group);
+				//				scene.add(group);
 
 				changeDrawData(nowDataNumber);//描画範囲を現在のデータのみに絞る
 
@@ -335,7 +338,7 @@
 
 						mouse.x = (event.clientX-rect.left)/width *2 - 1;
 						mouse.y = -(event.clientY-rect.top)/height *2 + 1;
-//						console.log(mouse);
+						//						console.log(mouse);
 
 
 						//raycaster
