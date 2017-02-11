@@ -371,12 +371,11 @@
 						mouse.x = (event.clientX-rect.left)/width *2 - 1;
 						mouse.y = -(event.clientY-rect.top)/height *2 + 1;
 						//						console.log(mzouse);
-						//depthDataに登録されている該当indexのデプスを引き抜く
-						//						var index = x + y * W;
-						var p = new THREE.Vector3(mouse.x,mouse.y,0);
-						usersSketchData.vertices.push(p);
-
-						//						console.log(usersSketchData.vertices.length);
+						//depthDataに登録されているマウス位置の該当indexのデプスを引き抜く
+						var x = parseInt(event.clientX-rect.left);
+						var y = parseInt(event.clientY-rect.top);
+						var index = x + y * width;
+						var p = allData[nowDataNumber].depthData.vertices[index];
 
 						//raycaster
 						raycaster.setFromCamera( mouse, camera );
