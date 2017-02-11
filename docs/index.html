@@ -10,6 +10,9 @@
 		<!--BOOTSTRAP-->
 		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+		<script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+
 
 		<!--THREE.JS-->
 		<script src="js/three.min.js"></script>
@@ -87,6 +90,7 @@
 			var depth_endpoints = [];//データの区切り位置を保存
 
 			//users sketch data
+			var sketchMode = true;
 			var usersSketchData =  {
 				"maxpoints": 1000,
 				"lines": 0,
@@ -322,7 +326,11 @@
 
 				function animate() {
 					requestAnimationFrame(animate);
-					controls.update();
+
+					if(!sketchMode){
+						controls.update();
+					}
+
 					if(isAnimation)
 						render();
 				}
@@ -656,7 +664,10 @@
 
 				renderer.render(scene, camera);//表示を更新
 				controls.reset();//始点をリセットする
-			});
+			})
+			$(document).on("change","#changeMode",function(e) {
+				sketchMode = !sketchMode; // sketching/viewing
+			})
 		</script>
 
 		<!-- show canvas -->
@@ -664,25 +675,31 @@
 
 		<!-- show controles -->
 		<div id="controles">
-			<label class="radio-inline">
-				<input type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1" onclick="changeControl(0)" checked = "true"> PAN/TILT/ROLL
-			</label>
-			<label class="radio-inline">
-				<input type="radio" name="inlineRadioOptions" id="inlineRadio2" value="option2" onclick="changeControl(1)"> ZOOM IN/OUT
-			</label>
-			<label class="radio-inline">
-				<input type="radio" name="inlineRadioOptions" id="inlineRadio3" value="option3" onclick="changeControl(2)"> TRANSLATE
-			</label>
+			<input id="changeMode" type="checkbox" data-toggle="toggle" checked data-on="Sketch Mode" data-off="View Mode">
+
 			<br>
-			<button type="submit" class="btn btn-success" onclick="resetView()">RESET VIEWPOINT</button>
 
-		</div>
+			<div class="radio">
+				<label class="radio-inline">
+					<input type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1" onclick="changeControl(0)" checked = "true"> PAN/TILT/ROLL
+				</label>
+				<label class="radio-inline">
+					<input type="radio" name="inlineRadioOptions" id="inlineRadio2" value="option2" onclick="changeControl(1)"> ZOOM IN/OUT
+				</label>
+				<label class="radio-inline">
+					<input type="radio" name="inlineRadioOptions" id="inlineRadio3" value="option3" onclick="changeControl(2)"> TRANSLATE
+				</label>
+				<br>
+				<button type="submit" class="btn btn-success" onclick="resetView()">RESET VIEWPOINT</button>
+
+			</div>
 
 
-		<!-- show sketch list -->
+			<!-- show sketch list -->
 
-		<div id="datalist">
+			<div id="datalist">
 
+			</div>
 		</div>
 
 	</body>
