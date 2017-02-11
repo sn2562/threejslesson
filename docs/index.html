@@ -51,6 +51,7 @@
 
 			//DOM
 			var container;
+			var canvas = document.getElementById('canvas');
 
 
 			//操作
@@ -58,7 +59,6 @@
 			var octree;
 			var isDragging = false;
 			var onCanvas = false;
-
 			//intraction
 			var raycaster, mouse;
 
@@ -125,8 +125,9 @@
 
 				// DOM
 				container = document.createElement('div');
+				canvas = document.getElementById('canvas');
 				//				document.body.appendChild(container);
-				document.getElementById("canvas").appendChild(container);
+				canvas.appendChild(container);
 
 
 				// Scene
@@ -310,7 +311,7 @@
 
 				// trackballに変化があった時だけ描画を呼ぶ
 				controls.addEventListener( 'change', render );
-				controls.enabled = !sketchMode;
+				controls.pose = sketchMode;
 
 				//スマホ向けに画面を最大化する
 				if (navigator.userAgent.indexOf('iPhone') > 0 || navigator.userAgent.indexOf('iPad') > 0 || navigator.userAgent.indexOf('iPod') > 0 || navigator.userAgent.indexOf('Android') > 0) {
@@ -323,166 +324,171 @@
 				animate();
 
 				///////////////////////////////////////
-				document.getElementById("canvas").addEventListener( 'mousemove', onDocumentMouseMove, false );
-				document.getElementById("canvas").addEventListener( 'mousedown', function(e) {isDragging = true;});
-				document.getElementById("canvas").addEventListener( 'mouseup', function(e) {isDragging = false;});
+				//todo
+				//				canvas.addEventListener("touchstart",onDown(),false);
+				//				canvas.addEventListener("touchmove",onMove,false);
+				//				canvas.addEventListener("touchend",onUp,false);
+				canvas.addEventListener("mousedown",onMouseDown,false);
+				canvas.addEventListener("mousemove",onMouseMove,false);
+				canvas.addEventListener("mouseup",onMouseUp,false);
+			}
+			//				canvas.addEventListener( 'mousemove', onDocumentMouseMove, false );
 
-				//				$(renderer.domElement).on('mousedown', function(e) {
-				//					isDragging = true;
-				//				}).on('mousemove', function(e) {
-				//					if(isDragging) {
-				//						//画面内ドラッグ	controls.keys = [ 65, 83, 68 ];
-				//						//						var eve = document.createEvent("KeyboardEvent");
-				//						//						eve.initKeyboardEvent("keypress", true, true, window, true, false, false, false, 0, 68);
-				//						//						renderer.domElement.dispatchEvent(eve);
-				//
-				//						//						controls.changeState();
-				//
+			function animate() {
+				requestAnimationFrame(animate);
+
+				controls.update();
+
+				if(isAnimation)
+					render();
+			}
+
+			function render() {
+
+				//animation
+				if(isAnimation){
+					var frame = Math.floor( (new Date().getTime() - startTime) / ( 1000 / fps ) );
+					if(oldFrame != frame){//フレームが切り替わっていたら実行
+						changeDrawData(animOrder[animIndex%animOrder.length]);
+						animIndex++;
+						oldFrame = frame;
+					}
+				}
+				renderer.render(scene, camera);
+			}
+
+			function resize() {
+				//TODO 基本的には横幅を画面サイズに合わせて、高さを最大化する
+				var h = window.innerWidth;
+				var w = window.innerHeight;
+
+				camera.updateProjectionMatrix();
+				h = height*window.innerWidth/width;
+
+				//もし新しく設定した高さが画面からはみ出る場合は,横幅を再設定する
+				//					if(h>window.innerHeight){
+				//						h = window.innerWidth;
+				//						w = width*window.innerHeight/height;
 				//					}
-				//				});
 
-				function animate() {
-					requestAnimationFrame(animate);
+				renderer.setSize(h, w);
 
-					if(!sketchMode){
-						controls.update();
+				var newheight = height*window.innerWidth/width;
+				renderer.setSize(window.innerWidth, newheight);
+			}
+
+			//			function onDown(event){
+			//			}
+			//			function onMove(event){
+			//			}
+			//			function onUp(event){
+			//			}
+
+			function onMouseDown(event){
+				//現在のcontrolsの値を保存しておく
+				//				controls
+
+				//				var oldControls = {
+				//					target0:0,
+				//					position0:0,
+				//					up0:0
+				//				};
+			}
+
+			function onMouseMove(event){
+				if(sketchMode){
+					console.log("aaa");
+				}
+			}
+
+			function onMouseUp(event){
+			}
+
+			function onDocumentMouseMove(event){
+				var rect = event.target.getBoundingClientRect();
+
+				//対象がキャンバスなら実行する
+				if(width == rect.width){
+					if(!isDragging && sketchMode){
+						console.log("ドラッグ中ああああああ");
+					}
+					onCanvas = true;
+					event.preventDefault();
+					mouse.x = (event.clientX-rect.left)/width *2 - 1;
+					mouse.y = -(event.clientY-rect.top)/height *2 + 1;
+					//						console.log(mzouse);
+					//depthDataに登録されているマウス位置の該当indexのデプスを引き抜く
+					var x = parseInt(event.clientX-rect.left);
+					var y = parseInt(event.clientY-rect.top);
+					var index = x + y * width;
+					var p = allData[nowDataNumber].depthData.vertices[index];
+
+					//raycaster
+					raycaster.setFromCamera( mouse, camera );
+
+					var intersects = raycaster.intersectObject( mesh_d );
+					if ( intersects.length > 0 ) {
+
+						var intersect = intersects[ 0 ];
+						var face = intersect.face;
+
+						//						var linePosition = line.geometry.attributes.position;//あわせるメッシュ
+						var meshPosition = mesh_d.geometry.attributes.position;//マウス位置のメッシュ
+						//
+						//						linePosition.copyAt( 0, meshPosition, face.a );
+						//						linePosition.copyAt( 1, meshPosition, face.b );
+						//						linePosition.copyAt( 2, meshPosition, face.c );
+						//						linePosition.copyAt( 3, meshPosition, face.a );
+
+						mesh_d.updateMatrix();
+						//						line.geometry.applyMatrix( mesh.matrix );
+						//						line.visible = true;
+					} else {
+						//						line.visible = false;
+						onCanvas = false;
 					}
 
-					if(isAnimation)
-						render();
 				}
 
-				function render() {
 
-					//animation
-					if(isAnimation){
-						var frame = Math.floor( (new Date().getTime() - startTime) / ( 1000 / fps ) );
-						if(oldFrame != frame){//フレームが切り替わっていたら実行
-							changeDrawData(animOrder[animIndex%animOrder.length]);
-							animIndex++;
-							oldFrame = frame;
-						}
-					}
-					renderer.render(scene, camera);
+
+			}
+
+			function createGeometry(count) {
+				var geometry = new THREE.Geometry();
+
+				for (var i = 0; i < count; i++) {
+					var x = Math.random() * 1000 - 500;
+					var y = Math.random() * 1000 - 500;
+					var z = Math.random() * 1000 - 500;
+					var particle = new THREE.Vector3(x, y, z);
+					particle.velocity = new THREE.Vector3(0, -Math.random(), 0);
+					geometry.vertices.push(particle);
 				}
+				return geometry;
+			}
 
-				function resize() {
-					//TODO 基本的には横幅を画面サイズに合わせて、高さを最大化する
-					var h = window.innerWidth;
-					var w = window.innerHeight;
+			//座標系
+			function drawAxis(){
+				// line
+				//create a blue LineBasicMaterial
+				var material = new THREE.LineBasicMaterial({ color: 0x0000ff });
 
-					camera.updateProjectionMatrix();
-					h = height*window.innerWidth/width;
+				var geometry = new THREE.Geometry();
 
-					//もし新しく設定した高さが画面からはみ出る場合は,横幅を再設定する
-					//					if(h>window.innerHeight){
-					//						h = window.innerWidth;
-					//						w = width*window.innerHeight/height;
-					//					}
+				var lineLenght = 10000;
+				geometry.vertices.push(new THREE.Vector3(0, 0, 0));
+				geometry.vertices.push(new THREE.Vector3(lineLenght, 0, 0));
+				geometry.vertices.push(new THREE.Vector3(0, 0, 0));
+				geometry.vertices.push(new THREE.Vector3(0, lineLenght, 0));
+				geometry.vertices.push(new THREE.Vector3(0, 0, 0));
+				geometry.vertices.push(new THREE.Vector3(0, 0, lineLenght));
 
-					renderer.setSize(h, w);
+				var line = new THREE.Line(geometry, material);
 
-					var newheight = height*window.innerWidth/width;
-					renderer.setSize(window.innerWidth, newheight);
-				}
+				scene.add(line);
+			}
 
-				function onDocumentMouseMove(event){
-					var rect = event.target.getBoundingClientRect();
-
-					//対象がキャンバスなら実行する
-					if(width == rect.width){
-						if(isDragging && sketchMode){
-							console.log("ドラッグ中");
-						}
-						onCanvas = true;
-						event.preventDefault();
-						mouse.x = (event.clientX-rect.left)/width *2 - 1;
-						mouse.y = -(event.clientY-rect.top)/height *2 + 1;
-						//						console.log(mzouse);
-						//depthDataに登録されているマウス位置の該当indexのデプスを引き抜く
-						var x = parseInt(event.clientX-rect.left);
-						var y = parseInt(event.clientY-rect.top);
-						var index = x + y * width;
-						var p = allData[nowDataNumber].depthData.vertices[index];
-
-						//raycaster
-						raycaster.setFromCamera( mouse, camera );
-
-						var intersects = raycaster.intersectObject( mesh_d );
-						if ( intersects.length > 0 ) {
-
-							var intersect = intersects[ 0 ];
-							var face = intersect.face;
-
-							//						var linePosition = line.geometry.attributes.position;//あわせるメッシュ
-							var meshPosition = mesh_d.geometry.attributes.position;//マウス位置のメッシュ
-							//
-							//						linePosition.copyAt( 0, meshPosition, face.a );
-							//						linePosition.copyAt( 1, meshPosition, face.b );
-							//						linePosition.copyAt( 2, meshPosition, face.c );
-							//						linePosition.copyAt( 3, meshPosition, face.a );
-
-							mesh_d.updateMatrix();
-							//						line.geometry.applyMatrix( mesh.matrix );
-							//						line.visible = true;
-						} else {
-							//						line.visible = false;
-							onCanvas = false;
-						}
-
-					}
-
-
-
-				}
-
-				function createGeometry(count) {
-					var geometry = new THREE.Geometry();
-
-					for (var i = 0; i < count; i++) {
-						var x = Math.random() * 1000 - 500;
-						var y = Math.random() * 1000 - 500;
-						var z = Math.random() * 1000 - 500;
-						var particle = new THREE.Vector3(x, y, z);
-						particle.velocity = new THREE.Vector3(0, -Math.random(), 0);
-						geometry.vertices.push(particle);
-					}
-					return geometry;
-				}
-
-				//座標系
-				function drawAxis(){
-					// line
-					//create a blue LineBasicMaterial
-					var material = new THREE.LineBasicMaterial({ color: 0x0000ff });
-
-					var geometry = new THREE.Geometry();
-
-					var lineLenght = 10000;
-					geometry.vertices.push(new THREE.Vector3(0, 0, 0));
-					geometry.vertices.push(new THREE.Vector3(lineLenght, 0, 0));
-					geometry.vertices.push(new THREE.Vector3(0, 0, 0));
-					geometry.vertices.push(new THREE.Vector3(0, lineLenght, 0));
-					geometry.vertices.push(new THREE.Vector3(0, 0, 0));
-					geometry.vertices.push(new THREE.Vector3(0, 0, lineLenght));
-
-					var line = new THREE.Line(geometry, material);
-
-					scene.add(line);
-				}
-				//				window.addEventListener('resize', resize, false);//キャンバスサイズを画面に合わせる
-				window.addEventListener( 'keydown', function ( event ) {
-					console.log("keydown", event.keyCode);
-					switch ( event.keyCode ) {
-
-						case 13: //0 reset
-							console.log("controls",controls);
-
-							controls.reset();//始点をリセットする
-							break;
-					}
-				});
-			};
 			function init(){
 				//読み込みの実行
 
@@ -650,6 +656,18 @@
 				depthGeometry.setDrawRange(d_start,d_range);
 				sketchGeometry.setDrawRange(s_start,s_range);
 			}
+			//				window.addEventListener('resize', resize, false);//キャンバスサイズを画面に合わせる
+			window.addEventListener( 'keydown', function ( event ) {
+				console.log("keydown", event.keyCode);
+				switch ( event.keyCode ) {
+
+					case 13: //0 reset
+						console.log("controls",controls);
+
+						controls.reset();//始点をリセットする
+						break;
+				}
+			});
 
 			//DOM側から実行する関数
 			function changeControl(state){
@@ -669,8 +687,9 @@
 			})
 			//スケッチボタンが押されたら
 			$(document).on("change","#changeMode",function(e) {
-				sketchMode = !sketchMode; // sketching/viewing
-				controls.enabled = !sketchMode;
+				sketchMode = !sketchMode; // sketching/
+				controls.pose  = !controls.pose;
+				//controls.enabled = !sketchMode; //これを実行するとmousemoveが正常に動かなくなる
 			})
 		</script>
 
