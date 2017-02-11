@@ -188,20 +188,12 @@
 					return next_positions_index++;
 				}
 
-				// simple Koch curve
-				function snowflake_iteration(p0, p4, depth,datanum,idx) {
-					if (--depth < 0) {
-						var i = next_positions_index-1; // p0 already there
-						add_vertex(p4,datanum,idx);
-						indices_array.push(i, i+1);
-						return;
-					}
-				}
-
 				function snowflake(points, loop, x_offset,datanum,idx) {
 					add_vertex(points[0],datanum,idx);
 					for (var p_index=0, p_count=points.length-1; p_index != p_count; ++p_index) {
-						snowflake_iteration(points[p_index], points[p_index+1], 0,datanum,idx);
+						var i = next_positions_index-1; // p0 already there
+						add_vertex(points[p_index+1],datanum,idx);
+						indices_array.push(i, i+1);
 					}
 				}
 
