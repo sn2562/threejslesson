@@ -37,7 +37,7 @@
 				//				'data/13_0_3.dsddata.txt',
 				//				'data/13_9_39.dsddata.txt',
 				//				'data/14_56_24.dsddata.txt'
-												'data/box1.dsddata.txt',
+				'data/box1.dsddata.txt',
 				//								'data/dancefigure.txt',
 				//				'data/takeu.txt',
 				//				'data/guitar.txt',
@@ -100,7 +100,6 @@
 				"colors": [[]],
 				"colors_": [],
 				"lineWidth":[],
-				"indices_array":[]
 			};
 			var usersSketchGeometry;
 
@@ -161,12 +160,19 @@
 				drawAxis();
 
 
+				//Objects
+				var positions_;//すべての構成点
+				var colors_;//すべての構成色情報
+
 				//Depth Objects
 				group = new THREE.Object3D();
 
 				//Depth Objects with Buffer Geometry
 				var depthPoints = [];
 				var depthColor = [];
+				
+				positions_ = [];//すべてのスケッチの構成点
+				colors_ = [];//すべてのスケッチの色情報
 
 				for(var i=0;i<allData.length;i++){
 					for(var j=0;j<allData[i].depthData.vertices.length;j++){
@@ -174,31 +180,31 @@
 						var p = allData[i].depthData.vertices[j];
 						//もしdepthが0以上なら描画用に再設定
 						if(p.z < z0){
-							depthPoints.push(p.x, p.y, p.z);
+							positions_.push(p.x, p.y, p.z);
 							// colors
 							var c = allData[i].depthData.colors[j].toArray();
-							depthColor.push(c[0],c[1],c[2]);//BGRの順に登録
+							colors_.push(c[0],c[1],c[2]);//BGRの順に登録
 						}
 					}
-					depth_endpoints.push(depthPoints.length/3);
+					allData[i].depthData.endpoint = positions_.length/3;
 				}
 
 				depthGeometry = new THREE.BufferGeometry();
-				depthGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( depthPoints ), 3 ) );
-				depthGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( depthColor ), 3 ) );
+				depthGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( positions_ ), 3 ) );
+				depthGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( colors_ ), 3 ) );
 
 				var depthMaterial = new THREE.PointsMaterial( { size: 15, vertexColors: THREE.VertexColors, opacity:0.45 } );
 				mesh_d = new THREE.Points( depthGeometry, depthMaterial );
-				//				group.add( mesh_d );
-				//				scene.add( mesh_d );
+				scene.add(mesh_d);
 
 				//Line Objects
-
 				sketchGeometry = new THREE.BufferGeometry();
 				var tmaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors,linewidth: 1});
 
 				//sketchlineの生成
 				indices_array = [];//構成点をどうやってつなぐか
+				positions_ = [];//すべてのスケッチの構成点
+				colors_ = [];//すべてのスケッチの色情報
 
 				var next = 0;
 				for( var i=0; i<allData.length ; i++){//全ての登録データについて行う
@@ -207,20 +213,20 @@
 
 							//最初の座標
 							var p = allData[i].sketchData.vertices[j][0];
-							allData[i].sketchData.positions_.push(p.x,p.y,p.z);//最初の点を追加する
+							positions_.push(p.x,p.y,p.z);//最初の点を追加する
 
 							//線の色
 							var rgb = allData[i].sketchData.colors[j].toArray();
-							allData[i].sketchData.colors_.push(rgb[0],rgb[1],rgb[2]);;//最初の色を追加する
+							colors_.push(rgb[0],rgb[1],rgb[2]);;//最初の色を追加する
 
 							//最初の点以降を全て追加する
 							for( var k=1 ; k<allData[i].sketchData.vertices[j].length ; k++ ){//線を構成する最後の点まで参照する
 								//座標
 								var p = allData[i].sketchData.vertices[j][k];
-								allData[i].sketchData.positions_.push(p.x,p.y,p.z); //構成点を追加
+								positions_.push(p.x,p.y,p.z); //構成点を追加
 
 								//色
-								allData[i].sketchData.colors_.push(rgb[0],rgb[1],rgb[2]);;//線の色を
+								colors_.push(rgb[0],rgb[1],rgb[2]);;//線の色を
 
 								//次の点の登録添字
 								next = next+1;
@@ -245,8 +251,8 @@
 					sketchColors = sketchColors.concat(allData[i].sketchData.colors_);
 				}
 
-				sketchGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( sketchPositions ), 3 ) );
-				sketchGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( sketchColors ), 3 ) );
+				sketchGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( positions_ ), 3 ) );
+				sketchGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( colors_ ), 3 ) );
 
 				mesh_s = new THREE.LineSegments( sketchGeometry, tmaterial );
 				mesh_s.scale.set( 1.05,1.05,1.05 );//スケッチをちょっと大きくする
@@ -566,7 +572,8 @@
 				var dData = {
 					"points": 0,
 					"vertices": [],
-					"colors": []
+					"colors": [],
+					"endpoint": []
 				};
 
 				//PCDは10行目から
@@ -635,15 +642,16 @@
 
 				//depth data
 				var d_start = 0;
-				var d_range = depth_endpoints[nowDataNumber];
+				var d_range = allData[nowDataNumber].depthData.endpoint;
 				//sketch data
 				var s_start = 0;
 				var s_range = allData[nowDataNumber].sketchData.endpoint;
 
 				if(nowDataNumber != 0){
-					d_start = depth_endpoints[nowDataNumber-1];
-					d_range = d_range - depth_endpoints[nowDataNumber-1];
-
+					//depth
+					d_start = allData[nowDataNumber-1].depthData.endpoint;
+					d_range = d_range - allData[nowDataNumber-1].depthData.endpoint;
+					//sketch stroke
 					s_start = allData[nowDataNumber-1].sketchData.endpoint;
 					s_range = s_range - allData[nowDataNumber-1].sketchData.endpoint;
 				}
