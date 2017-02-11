@@ -329,12 +329,11 @@
 				animate();
 
 				///////////////////////////////////////
-				//				document.getElementById("canvas").addEventListener( 'mousemove', onDocumentMouseMove, false );
 				//				canvas.addEventListener("touchstart",onDown(),false);
 				//				canvas.addEventListener("touchmove",onMove,false);
 				//				canvas.addEventListener("touchend",onUp,false);
 				//				canvas.addEventListener("mousedown",onMouseDown,false);
-				canvas.addEventListener("mousemove",onMouseMove,false);
+				//				canvas.addEventListener("mousemove",onMouseMove,false);
 				//				canvas.addEventListener("mouseup",onMouseUp,false);
 
 				function animate() {
@@ -382,8 +381,8 @@
 				}
 				function onMouseMove(event){
 					console.log("onMouseMove");
-				}
-				function onDocumentMouseMove(event){
+
+					return;
 					var rect = event.target.getBoundingClientRect();
 
 					//対象がキャンバスなら実行する
@@ -693,6 +692,11 @@
 					controls.pause = false;
 				}
 			})
+
+			function mouseDragg(event){
+				//かなしいかな...ドラッグイベントが実装できないので無理やりTrackballControlsから呼び出す
+				console.log("dragg");
+			}
 		</script>
 
 		<!-- show canvas -->

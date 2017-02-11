@@ -467,6 +467,8 @@ THREE.TrackballControls = function ( object, domElement ) {
 			_panEnd.copy( getMouseOnScreen( event.pageX, event.pageY ) );
 
 		}
+		mouseDragg(event);//どうしてもマウスドラッグ実装できないのでここから無理やり呼び出す
+
 		//		}
 
 	}
@@ -585,6 +587,8 @@ THREE.TrackballControls = function ( object, domElement ) {
 				break;
 
 		}
+		mouseDragg(event);//どうしてもマウスドラッグ実装できないのでここから無理やり呼び出す
+
 		//		}
 
 	}
