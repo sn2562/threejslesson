@@ -55,7 +55,6 @@
 
 			//操作
 			var controls;
-			var octree;
 			var isDragging = false;
 			var onCanvas = false;
 
@@ -74,7 +73,6 @@
 
 			//objects
 			var group = null;
-			var mesh_d,mesh_s;
 
 			//depthdata
 			var depthGeometry = null;
@@ -138,23 +136,6 @@
 				camera = new THREE.PerspectiveCamera(45, width/height, 10, 150000);
 				camera.position.set(0,0,z0);
 
-				// create octree
-
-				octree = new THREE.Octree( {
-					// uncomment below to see the octree (may kill the fps)
-					//scene: scene,
-					// when undeferred = true, objects are inserted immediately
-					// instead of being deferred until next octree.update() call
-					// this may decrease performance as it forces a matrix update
-					undeferred: false,
-					// set the max depth of tree
-					depthMax: Infinity,
-					// max number of objects before nodes split or merge
-					objectsThreshold: 8,
-					// percent between 0 and 1 that nodes will overlap each other
-					// helps insert objects that lie over more than one node
-					overlapPct: 0.15
-				} );
 
 				//Axis
 				drawAxis();
@@ -163,14 +144,14 @@
 				//Objects
 				var positions_;//すべての構成点
 				var colors_;//すべての構成色情報
+				group = new THREE.Object3D();//表示グループ
+				scene.add(group);
 
-				//Depth Objects
-				group = new THREE.Object3D();
 
 				//Depth Objects with Buffer Geometry
 				var depthPoints = [];
 				var depthColor = [];
-				
+
 				positions_ = [];//すべてのスケッチの構成点
 				colors_ = [];//すべてのスケッチの色情報
 
@@ -190,18 +171,17 @@
 				}
 
 				depthGeometry = new THREE.BufferGeometry();
-				depthGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( positions_ ), 3 ) );
-				depthGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( colors_ ), 3 ) );
+				depthGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( positions_ ), 3 ) );//構成点
+				depthGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( colors_ ), 3 ) );//色
 
 				var depthMaterial = new THREE.PointsMaterial( { size: 15, vertexColors: THREE.VertexColors, opacity:0.45 } );
-				mesh_d = new THREE.Points( depthGeometry, depthMaterial );
+
+				var mesh_d = new THREE.Points( depthGeometry, depthMaterial );
 				scene.add(mesh_d);
 
-				//Line Objects
-				sketchGeometry = new THREE.BufferGeometry();
-				var tmaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors,linewidth: 1});
 
-				//sketchlineの生成
+				//Sketch Stroke Objects with Buffer Geometry
+
 				indices_array = [];//構成点をどうやってつなぐか
 				positions_ = [];//すべてのスケッチの構成点
 				colors_ = [];//すべてのスケッチの色情報
@@ -239,58 +219,24 @@
 					sketch_endpoints.push(indices_array.length);//データごとの区切り - endpointsを記録する
 					//ちなみに、endpointは lineの構成点総数*2 - line数*2 で計算できる(はず)
 				}
-				//データごとの区切りを登録
+				sketchGeometry = new THREE.BufferGeometry();
+				sketchGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( positions_ ), 3 ) );//構成点
+				sketchGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( colors_ ), 3 ) );//色
+				sketchGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );//線のつなぎ方を設定
 
-				sketchGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );
+				var sketchMaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors,linewidth: 1});
 
-				//すべてのデータについて、色情報と構成点情報を追加する
-				var sketchPositions = [];
-				var sketchColors = [];
-				for(var i=0;i<allData.length;i++){
-					sketchPositions = sketchPositions.concat(allData[i].sketchData.positions_);
-					sketchColors = sketchColors.concat(allData[i].sketchData.colors_);
-				}
-
-				sketchGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( positions_ ), 3 ) );
-				sketchGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( colors_ ), 3 ) );
-
-				mesh_s = new THREE.LineSegments( sketchGeometry, tmaterial );
+				var mesh_s = new THREE.LineSegments( sketchGeometry, sketchMaterial );
 				mesh_s.scale.set( 1.05,1.05,1.05 );//スケッチをちょっと大きくする
 				mesh_s.position.set( 0,0,1 );//デプスデータよりも手前にずらす
 
-				scene.add( mesh_s );
-
-				//				parent_node = new THREE.Object3D();
-				//				parent_node.add(mesh);
-
-				raycaster = new THREE.Raycaster();
-				mouse = new THREE.Vector2();
-
-				//				group.add( parent_node );//add sketch data
-				//				scene.add(group);
+				group.add( mesh_s );
 
 				changeDrawData(nowDataNumber);//描画範囲を現在のデータのみに絞る
 
-
-				//test users line sketching
-				var maxpoints = 60;
-				var usGeometry = new THREE.BufferGeometry();
-				var usPositions = new Float32Array(usersSketchData.maxpoints * 3);//頂点の場所を格納していくarrayを用意
-
-				usGeometry.addAttribute('position', new THREE.BufferAttribute(usPositions, 3));
-				var array = usGeometry.attributes.position.array;
-
-				indices_array = [0,1,1,2,2,3];
-				for(var i=0;i*3+2<maxpoints;i++){
-					array[i*3] = 100*i;    //x1
-					array[i*3+1] = 100*(i%2);    //x1
-				}
-				usGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );
-
-				var usMaterial = new THREE.LineBasicMaterial({ color: 0x990000, linewidth : 5});
-				usetLine = new THREE.Line(usGeometry, usMaterial);
-
-				scene.add(usetLine);
+				//raycaste
+				raycaster = new THREE.Raycaster();
+				mouse = new THREE.Vector2();
 
 
 				// Renderer
