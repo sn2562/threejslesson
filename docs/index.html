@@ -311,7 +311,9 @@
 
 				// trackballに変化があった時だけ描画を呼ぶ
 				controls.addEventListener( 'change', render );
-				controls.pose = sketchMode;
+				if(sketchMode){//スケッチモードがtrueになっていたらcontroleを一時的に止めておく
+					controls.dispose();
+				}
 
 				//スマホ向けに画面を最大化する
 				if (navigator.userAgent.indexOf('iPhone') > 0 || navigator.userAgent.indexOf('iPad') > 0 || navigator.userAgent.indexOf('iPod') > 0 || navigator.userAgent.indexOf('Android') > 0) {
@@ -328,9 +330,11 @@
 				//				canvas.addEventListener("touchstart",onDown(),false);
 				//				canvas.addEventListener("touchmove",onMove,false);
 				//				canvas.addEventListener("touchend",onUp,false);
+
 				canvas.addEventListener("mousedown",onMouseDown,false);
 				canvas.addEventListener("mousemove",onMouseMove,false);
 				canvas.addEventListener("mouseup",onMouseUp,false);
+				canvas.addEventListener("mouseout",onMouseUp,false);
 			}
 			//				canvas.addEventListener( 'mousemove', onDocumentMouseMove, false );
 
@@ -366,7 +370,7 @@
 				h = height*window.innerWidth/width;
 
 				//もし新しく設定した高さが画面からはみ出る場合は,横幅を再設定する
-				//					if(h>window.innerHeight){
+				//				mousemove	if(h>window.innerHeight){
 				//						h = window.innerWidth;
 				//						w = width*window.innerHeight/height;
 				//					}
@@ -377,31 +381,35 @@
 				renderer.setSize(window.innerWidth, newheight);
 			}
 
-			//			function onDown(event){
-			//			}
-			//			function onMove(event){
-			//			}
-			//			function onUp(event){
-			//			}
-
-			function onMouseDown(event){
-				//現在のcontrolsの値を保存しておく
-				//				controls
-
-				//				var oldControls = {
-				//					target0:0,
-				//					position0:0,
-				//					up0:0
-				//				};
+			function onDown(event){
+			}
+			function onMove(event){
+			}
+			function onUp(event){
 			}
 
-			function onMouseMove(event){
-				if(sketchMode){
-					console.log("aaa");
-				}
+			function onMouseDown(event){
+				isDragging = true;
+				console.log("isDragging",isDragging);
+
+				usersSketchData.vertices.push([]);
 			}
 
 			function onMouseUp(event){
+				isDragging = false;
+			}
+
+			function onMouseMove(event){
+				console.log("isDraggiaaaaang",isDragging);
+				if(sketchMode && isDragging){
+					var rect = event.target.getBoundingClientRect();
+					//対象がキャンバスなら実行する
+					if(width == rect.width){
+						var a;
+					}
+
+				}
+
 			}
 
 			function onDocumentMouseMove(event){
@@ -688,8 +696,13 @@
 			//スケッチボタンが押されたら
 			$(document).on("change","#changeMode",function(e) {
 				sketchMode = !sketchMode; // sketching/
-				controls.pose  = !controls.pose;
+//				controls.pause  = !controls.pause;
 				//controls.enabled = !sketchMode; //これを実行するとmousemoveが正常に動かなくなる
+				if(sketchMode){
+					controls.dispose();
+				}else{
+					controls.startControl();
+				}
 			})
 		</script>
 
