@@ -310,6 +310,7 @@
 
 				// trackballに変化があった時だけ描画を呼ぶ
 				controls.addEventListener( 'change', render );
+				controls.enabled = !sketchMode;
 
 				//スマホ向けに画面を最大化する
 				if (navigator.userAgent.indexOf('iPhone') > 0 || navigator.userAgent.indexOf('iPad') > 0 || navigator.userAgent.indexOf('iPod') > 0 || navigator.userAgent.indexOf('Android') > 0) {
@@ -390,8 +391,7 @@
 
 					//対象がキャンバスなら実行する
 					if(width == rect.width){
-						console.log("isDragging ",isDragging);
-						if(isDragging){
+						if(isDragging && sketchMode){
 							console.log("ドラッグ中");
 						}
 						onCanvas = true;
