@@ -1,47 +1,23 @@
-geometry = new THREE.Geometry();        
+function snowflake(points, loop, x_offset,datanum,idx) {
+					add_vertex(points[0],datanum,idx);
+					for (var p_index=0, p_count=points.length-1; p_index != p_count; ++p_index) {
+						var i = next_positions_index-1; // p0 already there
+						add_vertex(points[p_index+1],datanum,idx);
+						indices_array.push(i, i+1);
+					}
+				}
 
-for (var i = 0; i < howmany; i++) {
-	var vector = new THREE.Vector3(data[i][0], data[i][2], data[i][1] );
-	geometry.vertices.push(vector);
-}
-
-attributes = {
-	size: { type: 'f', value: [] },
-	customColor: { type: 'c', value: [] }
-};
-
-uniforms = {
-	color: { type: "c", value: new THREE.Color( 0xFFFFFF ) },
-	texture: { type: "t", value: THREE.ImageUtils.loadTexture( "js/threejs/examples/textures/sprites/disc.png" ) }
-};
-
-var shaderMaterial = new THREE.ShaderMaterial( {
-	uniforms: uniforms,
-	attributes: attributes,
-	vertexShader: document.getElementById( 'vertexshader' ).textContent,
-	fragmentShader: document.getElementById( 'fragmentshader' ).textContent,
-	alphaTest: 0.9,
-} );
-
-particles = new THREE.PointCloud( geometry, shaderMaterial );
-
-for (var i = 0; i < howmany; i++) {
-	colors[i] = new THREE.Color(RainBowColor(data[i][3], 4));
-	sizes[i] = PARTICLE_SIZE * 0.5;
-}
-scene.add(particles);
-
-
-
-//////////
-
-
-function onDocumentMouseMove(e) {       
-	mouseVector.x = 2 * (e.clientX / containerWidth) - 1;
-	mouseVector.y = 1 - 2 * (e.clientY / containerHeight);
-	var vector = new THREE.Vector3(mouseVector.x, mouseVector.y, 0.5).unproject(camera);
-	raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
-	scene.updateMatrixWorld();
-	intersects = raycaster.intersectObject(particles);
-	console.log(intersects);
-}
+				//矩形の生成
+				for(var i=0;i<allData.length;i++){
+					for(var j=0;j<allData[i].sketchData.lines;j++){
+						if(allData[i].sketchData.vertices[j].length!=0){//線が登録されていれば
+							snowflake
+							(
+								allData[i].sketchData.vertices[j],
+								false, 600,i,j
+							);
+						}
+					}
+					//endpointsを記録する
+					sketch_endpoints.push(indices_array.length);
+				}

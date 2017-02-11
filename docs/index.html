@@ -54,6 +54,7 @@
 			var controls;
 			var octree;
 			var isDragging = false;
+			var onCanvas = false;
 
 			//intraction
 			var raycaster, mouse;
@@ -85,6 +86,17 @@
 			var sketch_endpoints = [];//データの区切り位置を保存
 			var depth_endpoints = [];//データの区切り位置を保存
 
+			//users sketch data
+			var usersSketchData =  {
+				"maxpoints": 1000,
+				"lines": 0,
+				"vertices": [],
+				"positions_": [],
+				"colors": [],
+				"colors_": [],
+				"lineWidth":[]
+			};
+
 			//Animation
 			var isAnimation = false;//animation mode
 			var animOrder = [0,1,2,1];//読み込みデータに応じて表示順序を指示
@@ -93,7 +105,6 @@
 			var fps = 10;//
 			var oldFrame = 0;
 			var isFrameChange = false;
-
 
 			//HTMLが読み込まれたら実行
 			window.addEventListener('load', init, false);
@@ -153,10 +164,13 @@
 					for(var j=0;j<allData[i].depthData.vertices.length;j++){
 						// positions
 						var p = allData[i].depthData.vertices[j];
-						depthPoints.push(p.x, p.y, p.z);
-						// colors
-						var c = allData[i].depthData.colors[j].toArray();
-						depthColor.push(c[0],c[1],c[2]);//BGRの順に登録
+						//もしdepthが0以上なら描画用に再設定
+						if(p.z<z0){
+							depthPoints.push(p.x, p.y, p.z);
+							// colors
+							var c = allData[i].depthData.colors[j].toArray();
+							depthColor.push(c[0],c[1],c[2]);//BGRの順に登録
+						}
 					}
 					depth_endpoints.push(depthPoints.length/3);
 				}
@@ -228,7 +242,7 @@
 				mesh_s.scale.set( 1.05,1.05,1.05 );//スケッチをちょっと大きくする
 				mesh_s.position.set( 0,0,1 );//デプスデータよりも手前にずらす
 
-				scene.add( mesh_s );
+				//				scene.add( mesh_s );
 
 				//				parent_node = new THREE.Object3D();
 				//				parent_node.add(mesh);
@@ -240,6 +254,31 @@
 				//				scene.add(group);
 
 				changeDrawData(nowDataNumber);//描画範囲を現在のデータのみに絞る
+
+
+				//test users line sketching
+				//			var maxpoints = 30;
+				var usGeometry = new THREE.BufferGeometry();
+				var usPositions = new Float32Array(usersSketchData.maxpoints * 3);//頂点の場所を格納していくarrayを用意
+
+				usGeometry.addAttribute('position', new THREE.BufferAttribute(usPositions, 3));
+				var array = usGeometry.attributes.position.array;
+				array[0] = -100;    //x1
+				array[1] = 0;       //y1
+				array[2] = 0;       //z1
+				array[3] = 100;     //x2
+				array[4] = 0;       //y2
+				array[5] = 0;       //z2
+				array[6] = 0;     //x2
+				array[7] = 100;       //y2
+				array[8] = 0;       //z2
+				//				usGeometry.addGroup(0, 2, 0);
+
+				var usMaterial = new THREE.LineBasicMaterial({ color: 0x990000, linewidth : 5});
+				usetLine = new THREE.Line(usGeometry, usMaterial);
+
+				scene.add(usetLine);
+
 
 				// Renderer
 				renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -277,10 +316,7 @@
 				animate();
 
 				///////////////////////////////////////
-				
 				document.getElementById("canvas").addEventListener( 'mousemove', onDocumentMouseMove, false );
-				
-				
 
 				function animate() {
 					requestAnimationFrame(animate);
@@ -328,14 +364,17 @@
 
 					//対象がキャンバスなら実行する
 					if(width == rect.width){
+						onCanvas = true;
 						event.preventDefault();
-						//						mouse.x = ( event.clientX / width ) * 2 - 1;
-						//						mouse.y = - ( event.clientY / height ) * 2 + 1;
-
 						mouse.x = (event.clientX-rect.left)/width *2 - 1;
 						mouse.y = -(event.clientY-rect.top)/height *2 + 1;
-						//						console.log(mouse);
+						//						console.log(mzouse);
+						//depthDataに登録されている該当indexのデプスを引き抜く
+						//						var index = x + y * W;
+						var p = new THREE.Vector3(mouse.x,mouse.y,0);
+						usersSketchData.vertices.push(p);
 
+//						console.log(usersSketchData.vertices.length);
 
 						//raycaster
 						raycaster.setFromCamera( mouse, camera );
@@ -348,7 +387,6 @@
 
 							//						var linePosition = line.geometry.attributes.position;//あわせるメッシュ
 							var meshPosition = mesh_d.geometry.attributes.position;//マウス位置のメッシュ
-							console.log(meshPosition);
 							//
 							//						linePosition.copyAt( 0, meshPosition, face.a );
 							//						linePosition.copyAt( 1, meshPosition, face.b );
@@ -356,15 +394,11 @@
 							//						linePosition.copyAt( 3, meshPosition, face.a );
 
 							mesh_d.updateMatrix();
-
 							//						line.geometry.applyMatrix( mesh.matrix );
-
 							//						line.visible = true;
-
 						} else {
-
 							//						line.visible = false;
-
+							onCanvas = false;
 						}
 
 					}
@@ -508,7 +542,7 @@
 
 				//PCD部分とSKETCH部分をそれぞれ取り出して、perseする
 				var newData ={"depthData":{},
-							  "sketchData":{}
+							  "sketchData":{},
 							 };
 				allData.push(newData);
 
