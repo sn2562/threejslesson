@@ -649,6 +649,7 @@
 			})
 
 			function mouseDragg(event,mode){
+				console.log("mouseDragg",event.clientX);
 				//かなしいかな...ドラッグイベントが実装できないので無理やりTrackballControlsから呼び出す
 				//mode:0 ドラッグ mode:1 クリック(ドラッグの開始)
 
@@ -756,7 +757,7 @@
 		</script>
 
 		<!-- show canvas -->
-		<div id="canvas" draggable="true" ondrag="myFunction(event)"></div>
+		<div id="canvas" draggable="true" ondrag=""></div>
 
 		<!-- show controles -->
 		<div id="controles">

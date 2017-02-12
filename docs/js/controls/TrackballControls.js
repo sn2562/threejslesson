@@ -17,7 +17,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 	// API
 
-	this.enabled = true;
+	this.enabled = false;
 	this.pause = false;//動作を一時的にposeする
 
 	this.screen = { left: 0, top: 0, width: 0, height: 0 };
@@ -105,8 +105,6 @@ THREE.TrackballControls = function ( object, domElement ) {
 	};
 
 	this.handleEvent = function ( event ) {
-		if(handleEvent)
-			console.log("handleEvent");
 
 		if ( typeof this[ event.type ] == 'function' ) {
 
@@ -151,8 +149,6 @@ THREE.TrackballControls = function ( object, domElement ) {
 	}() );
 
 	this.rotateCamera = ( function() {
-		if(printLog)
-			console.log("rotateCamera");
 
 		var axis = new THREE.Vector3(),
 			quaternion = new THREE.Quaternion(),
@@ -205,7 +201,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 		};
 
-	});
+	}() );
 
 
 	this.zoomCamera = function () {
@@ -451,7 +447,9 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 	function mousemove( event ) {
 		if(printLog)
-			console.log("mousemove");
+			console.log("mousemove",event.pageX);
+		
+		mouseDragg(event,0);//どうしてもマウスドラッグ実装できないのでここから無理やり呼び出す
 
 		if ( _this.enabled === false ) return;
 		//		if ( !_this.pause ){
@@ -473,7 +471,6 @@ THREE.TrackballControls = function ( object, domElement ) {
 			_panEnd.copy( getMouseOnScreen( event.pageX, event.pageY ) );
 
 		}
-		mouseDragg(event,0);//どうしてもマウスドラッグ実装できないのでここから無理やり呼び出す
 
 		//		}
 
