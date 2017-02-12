@@ -36,9 +36,9 @@
 			var dataPath = [
 				'Box_front',
 				//				'Box_side',
-				//				'takeu',
-				'guitar',
-				'Hungry',
+				'takeu',
+				//				'guitar',
+				//				'Hungry',
 				//				'anim01',
 				//				'anim02',
 				//				'anim03',
@@ -53,6 +53,8 @@
 			for(var i=0;i<dataPath.length;i++){
 				dataPath[i] = "data/"+dataPath[i]+".dsddata.txt";
 			}
+
+			var onPC = true;
 
 			//DOM
 			var container;
@@ -309,6 +311,7 @@
 					//スマートフォン時に実行したいjs
 					window.scrollTo(0,0);
 					resize();
+					onPC = false;
 				}
 
 				render();//描画
@@ -652,14 +655,26 @@
 				//かなしいかな...ドラッグイベントが実装できないので無理やりTrackballControlsから呼び出す
 				//mode:0 ドラッグ mode:1 クリック(ドラッグの開始)
 
-
 				var rect = event.target.getBoundingClientRect();
+				console.log(rect);
 
 				//スケッチモードで対象がキャンバスなら実行する
-				if(sketchMode && width == rect.width){
+				//				if(sketchMode && width == rect.width){
+				if(sketchMode){
 					event.preventDefault();
-					mouse.x = (event.clientX-rect.left)/width *2 - 1;
-					mouse.y = -(event.clientY-rect.top)/height *2 + 1;
+					var h,w;
+					if(onPC){
+						w = width;
+						h = height;
+					}else{
+						console.log("けたい");
+						w = rect.width;
+						h = rect.height;
+					}
+
+					mouse.x = (event.clientX-rect.left)/w *2 - 1;
+					mouse.y = -(event.clientY-rect.top)/h *2 + 1;
+
 
 					//マウスの2D座標から、depthDataに登録されているマウス位置の該当indexのデプスを引き抜く
 					var x = parseInt(event.clientX-rect.left);

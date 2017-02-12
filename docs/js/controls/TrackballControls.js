@@ -10,14 +10,14 @@ THREE.TrackballControls = function ( object, domElement ) {
 	var _this = this;
 	var STATE = { NONE: - 1, ROTATE: 0, ZOOM: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4 };
 
-	var printLog = true;//確認用
+	var printLog = false;//確認用
 
 	this.object = object;
 	this.domElement = ( domElement !== undefined ) ? domElement : document;
 
 	// API
 
-	this.enabled = false;
+	this.enabled = true;
 	this.pause = false;//動作を一時的にposeする
 
 	this.screen = { left: 0, top: 0, width: 0, height: 0 };
@@ -447,9 +447,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 	function mousemove( event ) {
 		if(printLog)
-			console.log("mousemove",event.pageX);
-		
-		mouseDragg(event,0);//どうしてもマウスドラッグ実装できないのでここから無理やり呼び出す
+			console.log("mousemove");
 
 		if ( _this.enabled === false ) return;
 		//		if ( !_this.pause ){
@@ -471,6 +469,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 			_panEnd.copy( getMouseOnScreen( event.pageX, event.pageY ) );
 
 		}
+		mouseDragg(event,0);//どうしてもマウスドラッグ実装できないのでここから無理やり呼び出す
 
 		//		}
 
