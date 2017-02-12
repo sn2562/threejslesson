@@ -850,18 +850,85 @@
 
 				//perse
 				var files = e.target.files; // FileList object
-				// files is a FileList of File objects. List some properties.
-				var output = [];
+				if (files.length<=0) return;
+
+				//TODO ファイルタイプがtxt以外は受け付けない
+				//				if (!files[0].type.match(/text/)) {
+				//					return;
+				//				}
+
 				var reader = new FileReader();// ファイルリーダー生成
 				reader.onload = (function(e) {
-					console.log("nu"+e.target.result);
-					
+					console.log("acccc");
+
+					loadSketch(e.target.result);//読み込んだデータを基にスケッチを構成する
 				});
 
 				var encode_type = 'UTF-8';
 				reader.readAsText(files[0],encode_type);//読み込んだファイルは一つだけ使う
+			}
 
-				//読み込んだデータを基にスケッチを構成する
+			function loadSketch(data){
+				data = data.split(/\r\n|\r|\n/);// 行ごとに分割
+				//perse data
+
+				var next = 0;
+				console.log("data.length",data.length)
+				
+				for(var i=1;i<data.length;i++){//データは一行目から
+					var d = data[i].split(' ');
+
+					//行の色
+					var c = new THREE.Color(parseInt(d[0]));// color 10進数
+					var rgb = c.toArray(); 
+					usersSketchData.colors.push(c);
+
+					//線の太さ
+					var w = parseInt(d[1]);// 太さ情報
+					usersSketchData.lineWidth.push(w);
+
+					var points = [];
+					//座標情報
+					for(var j=2 ; j<d.length ; j=j+3){
+						var px = parseFloat(d[j]);
+						var py = parseFloat(d[j+1]);
+						var pz = parseFloat(d[j+2]);
+						
+						var p = new THREE.Vector3(px,py,pz);
+
+						//頂点情報の書き換え
+						var idx = next*3;
+						usersSketchData.positions_[idx] = p.x;
+						usersSketchData.positions_[idx+1] = p.y;
+						usersSketchData.positions_[idx+2] = p.z;
+
+						//線の色の書き換え
+						usersSketchData.colors_[idx] = rgb[0];
+						usersSketchData.colors_[idx+1] = rgb[1];
+						usersSketchData.colors_[idx+2] = rgb[2];
+
+						//どの点同士をつなぐか
+
+						if( points.length != 0 )//ストロークの最初の線でなければ
+							usersSketchData.indices_array.push(next-1,next);//一つ前の点とつなぐように設定
+
+						points.push(p);
+						next++;
+					}
+					usersSketchData.vertices.push(points);
+				}
+				console.log("usersSketchData.vertices",usersSketchData.vertices);
+				usersSketchData.lines = usersSketchData.colors.length;
+
+
+				usersSketchData.endpoints = usersSketchData.indices_array.length;
+
+				//更新
+				usGeometry.addAttribute( 'position', new THREE.BufferAttribute( usersSketchData.positions_ , 3 ) );//構成点
+				usGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( usersSketchData.colors_ ), 3 ) );//色
+				usGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( usersSketchData.indices_array ), 1 ) );//線のつなぎ方を設定
+				usGeometry.setDrawRange(0,usersSketchData.endpoints);//表示領域を決める
+				renderer.render(scene, camera);
 			}
 		</script>
 
