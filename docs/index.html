@@ -34,10 +34,10 @@
 
 			//load Files
 			var dataPath = [
-//				'Box_front',
+				'Box_front',
 				//				'Box_side',
 				//				'takeu',
-//				'guitar',
+				'guitar',
 				'Hungry',
 				//				'anim01',
 				//				'anim02',
@@ -649,7 +649,6 @@
 			})
 
 			function mouseDragg(event,mode){
-				console.log("mouseDragg",event.clientX);
 				//かなしいかな...ドラッグイベントが実装できないので無理やりTrackballControlsから呼び出す
 				//mode:0 ドラッグ mode:1 クリック(ドラッグの開始)
 
@@ -757,7 +756,7 @@
 		</script>
 
 		<!-- show canvas -->
-		<div id="canvas" draggable="true" ondrag=""></div>
+		<div id="canvas" draggable="true" ondrag="myFunction(event)"></div>
 
 		<!-- show controles -->
 		<div id="controles">
