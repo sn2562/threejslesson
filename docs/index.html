@@ -790,13 +790,14 @@
 				//2行目 LINES Line数
 				//3行目以降 1行1ストローク [色 太さ P1座標 P1座標 P2座標 P3座標...]
 				var DataNmae = "SKETCH_";
-				var now = new Date();
+				var now = new Date;
+				now = now.toString();
 
-				var outputText = "DATE "+Date+"\r\n";
+				var outputText = "DATE "+now+"\r\n";
 
-				if(usersSketchData.vertices.length==1){//スケッチなし
-					outputText = outputText + "LINES 0";
-					return outputText;
+				//スケッチなしの場合
+				if(usersSketchData.vertices.length==1){
+					return 0;
 				}
 
 				var lineWidth = 12;//ストロークサイズはいまのところ決めうち
@@ -826,10 +827,12 @@
 				var filteName = "test";//保存する時のファイル名
 
 				if(e.value == STATE.TEXT){
-					console.log("save txt");
-					var textData ="testだよ";
-					//					download.downloadTXT_U(textData,filteName);
-					getStrokeData();
+					var textData = getStrokeData();
+					if(textData!=0){
+						download.downloadTXT_U(textData,filteName);
+					}else{
+						console.log("no sketch");
+					}
 
 				}else if(e.value == STATE.CANVAS){
 					console.log("save canvas");
