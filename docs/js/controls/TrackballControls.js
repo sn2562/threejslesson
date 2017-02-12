@@ -105,6 +105,8 @@ THREE.TrackballControls = function ( object, domElement ) {
 	};
 
 	this.handleEvent = function ( event ) {
+		if(handleEvent)
+			console.log("handleEvent");
 
 		if ( typeof this[ event.type ] == 'function' ) {
 
@@ -149,6 +151,9 @@ THREE.TrackballControls = function ( object, domElement ) {
 	}() );
 
 	this.rotateCamera = ( function() {
+		if(rotateCamera)
+			console.log("rotateCamera");
+
 
 		var axis = new THREE.Vector3(),
 			quaternion = new THREE.Quaternion(),
