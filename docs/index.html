@@ -246,13 +246,13 @@
 				sketchGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );//線のつなぎ方を設定
 
 				var sketchMaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors,linewidth: 8});
-				sketchMaterial.depthTest = false;//ほかのオブジェクトに重ならないようにスケッチだけは上に表示
+//				sketchMaterial.depthTest = false;//隠面処理をしない
 
 				object_s = new THREE.LineSegments( sketchGeometry, sketchMaterial );
 				//スケッチを全てのデータより手前に表示
 //				object_s.scale.set( 1.0,1.0,1.0 );//スケッチをちょっと大きくする
 //				object_s.position.set( 0,0,0 );//デプスデータよりも手前にずらす
-//				object_s. renderOrder = 1;
+//				object_s.renderOrder = 1;
 
 				group.add( object_s );
 
@@ -260,8 +260,6 @@
 
 
 				//Users Sketch Stroke Objects with Buffer Geometry
-
-
 				var maxpoints = usersSketchData.maxpoints;
 				indices_array = usersSketchData.indices_array;//構成点をどうやってつなぐか
 				positions_ = usersSketchData.positions_ = new Float32Array(maxpoints*3*3);//すべてのスケッチの構成点
@@ -279,6 +277,7 @@
 				object_us.scale.set( 1.05,1.05,1.05 );//スケッチをちょっと大きくする
 				object_us.position.set( 0,0,1 );//デプスデータよりも手前にずらす
 				group.add( object_us );
+				
 
 
 				//raycaste
