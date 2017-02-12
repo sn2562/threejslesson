@@ -719,12 +719,11 @@
 							usersSketchData.colors.push(c);//色を追加
 
 							//頂点情報の書き換え
-							//usersSketchData.positions_.push(p.x,p.y,p.z);
-							var i = (usersSketchData.colors.length-1)*3;
+							var i = next*3;
 							usersSketchData.positions_[i] = p.x;
 							usersSketchData.positions_[i+1] = p.y;
 							usersSketchData.positions_[i+2] = p.z;
-							//usersSketchData.colors_.push(rgb[0],rgb[1],rgb[2]);;//線の色
+							//線の色の書き換え
 							usersSketchData.colors_[i] = rgb[0];
 							usersSketchData.colors_[i+1] = rgb[1];
 							usersSketchData.colors_[i+2] = rgb[2];
@@ -735,23 +734,22 @@
 						}else{
 							//その後ストロークに含まれるポイントの追加
 							usersSketchData.vertices[usersSketchData.vertices.length-1].push(p); //構成点を追加
-							usersSketchData.colors.push(c);;//線の色
 
 							//頂点情報の書き換え
-							//usersSketchData.positions_.push(p.x,p.y,p.z);
-							var i = (usersSketchData.colors.length-1)*3;
+							var i = next*3;
 
 							usersSketchData.positions_[i] = p.x;
 							usersSketchData.positions_[i+1] = p.y;
 							usersSketchData.positions_[i+2] = p.z;
-							//usersSketchData.colors_.push(rgb[0],rgb[1],rgb[2]);;//線の色
+							//線の色の書き換え
+							rgb = usersSketchData.colors[usersSketchData.colors.length-1].toArray();//線の色は書き始めの色と一緒 ここをコメントアウトでその位置の写真の色を使う
 							usersSketchData.colors_[i] = rgb[0];
 							usersSketchData.colors_[i+1] = rgb[1];
 							usersSketchData.colors_[i+2] = rgb[2];
 
 							usersSketchData.indices_array.push(next-1,next);
-
 						}
+
 						usersSketchData.endpoints = usersSketchData.indices_array.length;
 
 						//更新
@@ -804,19 +802,21 @@
 				var lineWidth = 12;//ストロークサイズはいまのところ決めうち
 
 				//全てのスケッチストロークデータについて行う
-				console.log(usersSketchData.vertices.length);
-				console.log(usersSketchData.vertices[0].length);
 				for( var i=0 ; i<usersSketchData.vertices.length ; i++ ){
-					for ( var j=0;j<usersSketchData.vertices[i].length ; j++ ){
+					//色情報
+					var c = "0x"+usersSketchData.colors[i].getHexString();//0xFFFFFF
+					var line = "";
 
+					for ( var j=0;j<usersSketchData.vertices[i].length ; j++ ){
+						//座標
+						var p = usersSketchData.vertices[i][j];
+						line = line+" "+p.x+" "+p.y+" "+p.z;
 					}
-					var p = usersSketchData.vertices[i];//座標
-					var c = "0x"+usersSketchData.colors[i].getHexString();//色情報 0xFFFFFF
-					var row = c+" "+lineWidth+" "+p.x+" "+p.y+" "+p.z+"\r\n";
-					outputText = outputText + row;					
+					var row = c+" "+lineWidth+line+"\r\n";
+					outputText = outputText + row;
 				}
 
-				//				console.log(outputText);
+				console.log("outputText",outputText);
 
 				return outputText;
 			}
