@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!--<!DOCTYPE html>-->
 <html lang="ja">
 	<head>
 		<meta charset="utf-8">
@@ -34,20 +34,25 @@
 
 			//load Files
 			var dataPath = [
-				//				'data/13_0_3.dsddata.txt',
-				//				'data/13_9_39.dsddata.txt',
-				//				'data/14_56_24.dsddata.txt'
-				//				'data/box1.dsddata.txt',
-				//								'data/dancefigure.txt',
-				//				'data/takeu.txt',
-				//				'data/guitar.txt',
-				//				'data/todai_n.txt',
-				//				'data/gohan.txt',
-				//				'data/cafe-en.txt',
-				//				'data/box_inn.txt',
-				//				'data/plaster.txt',
-				'data/guitar2.txt'
+				'Box_front',
+				//				'Box_side',
+				'takeu',
+				'guitar',
+				'Hungry',
+				//				'anim01',
+				'anim02',
+				//				'anim03',
+				//				'SpeakerDoll',
+				//				'kt',
+				//				'TDNaru',
+				//				'Box_side_m',
+				//				'takeu_m',
+				//				'Hungry_m',
+				'CafeEN'
 			];//読み込みファイル一覧
+			for(var i=0;i<dataPath.length;i++){
+				dataPath[i] = "data/"+dataPath[i]+".dsddata.txt";
+			}
 
 			//DOM
 			var container;
