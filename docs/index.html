@@ -76,6 +76,7 @@
 			var object_d, object_s, object_us;
 
 			//depthdata
+			var step = 5;//デプスデータの表示数を減らして軽くする
 			var depthGeometry = null;
 
 			//sketchdata
@@ -159,11 +160,11 @@
 				colors_ = [];//すべてのスケッチの色情報
 
 				for(var i=0;i<allData.length;i++){
-					for(var j=0;j<allData[i].depthData.vertices.length;j++){
+					for( var j=0 ; j<allData[i].depthData.vertices.length ; j=j+step ){
 						// positions
 						var p = allData[i].depthData.vertices[j];
 						//もしdepthが0以上なら描画用に再設定
-						if(p.z < z0){
+						if( p.z != z0 ){
 							positions_.push(p.x, p.y, p.z);
 							// colors
 							var c = allData[i].depthData.colors[j].toArray();
@@ -700,7 +701,7 @@
 						usGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( usersSketchData.colors_ ), 3 ) );//色
 						usGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( usersSketchData.indices_array ), 1 ) );//線のつなぎ方を設定
 						usGeometry.setDrawRange(0,usersSketchData.endpoints);//表示領域を決める
-//						console.log(usersSketchData);
+						//						console.log(usersSketchData);
 						renderer.render(scene, camera);
 					}
 
