@@ -337,6 +337,8 @@
 				//				canvas.addEventListener("mouseup",onMouseUp,false);
 				//				canvas.addEventListener("mouseup",onMouseUp,false);
 
+				document.getElementById('files').addEventListener('change', uploadFile, false);
+
 				function animate() {
 					requestAnimationFrame(animate);
 
@@ -478,7 +480,7 @@
 						//最後の子要素として追加
 						label.appendChild(button);
 						var num = i+1;
-						label.appendChild(document.createTextNode("SKetch Data "+num));
+						label.appendChild(document.createTextNode("Sketch Data "+num));
 						box.appendChild(label);
 						element.appendChild(box);
 
@@ -821,7 +823,7 @@
 
 				return outputText;
 			}
-
+			//ユーザスケッチをダウンロード
 			function downloadFile(e){
 				var STATE = { TEXT: 0, CANVAS: 1 };
 				var filteName = "test";//保存する時のファイル名
@@ -839,6 +841,27 @@
 					var myCanvas = document.getElementsByTagName('canvas');
 					download.downloadCanvasIMG(myCanvas[0],filteName);
 				}
+			}
+
+			//ユーザスケッチを読み込む
+			function uploadFile(e){
+				deleteSketch();//現在のスケッチを消す
+
+
+				//perse
+				var files = e.target.files; // FileList object
+				// files is a FileList of File objects. List some properties.
+				var output = [];
+				var reader = new FileReader();// ファイルリーダー生成
+				reader.onload = (function(e) {
+					console.log("nu"+e.target.result);
+					
+				});
+
+				var encode_type = 'UTF-8';
+				reader.readAsText(files[0],encode_type);//読み込んだファイルは一つだけ使う
+
+				//読み込んだデータを基にスケッチを構成する
 			}
 		</script>
 
@@ -884,9 +907,15 @@
 			<button type="submit" class="btn btn-danger" onclick="deleteSketch()">DELETE SKETCH</button>
 			<br>
 			<br>
-			<button class="btn btn-default download" value="0" type="submit" onclick="downloadFile(this)">Download Text</button>
-			<button class="btn btn-default download" value="1" type="submit" onclick="downloadFile(this)">Download Image</button>
-
+			<br>
+			<br>
+			<p>Download / Upload Your Sketch Data</p>
+			<button class="btn btn-default download" value="0" type="submit" onclick="downloadFile(this)">DOWNLOAD(.txt)</button>
+			<button class="btn btn-default download" value="1" type="submit" onclick="downloadFile(this)">DOWNLOAD(.png)</button>
+			<!--			<button class="btn btn-default upload" type="submit" onclick="uploadFile(this)">UPLOAD</button>-->
+			<p>
+				<input type="file" id="files" name="files[]" multiple />
+			</p>
 		</div>
 
 	</body>
