@@ -637,7 +637,7 @@
 				}else if( e.value==1 ){
 					object_s.visible = e.checked;
 				}else if( e.value==2 ){
-					object_s.visible = e.checked;
+					object_us.visible = e.checked;
 				}
 				renderer.render(scene, camera);//表示を更新
 			}
@@ -874,7 +874,7 @@
 
 				var next = 0;
 				console.log("data.length",data.length)
-				
+
 				for(var i=1;i<data.length;i++){//データは一行目から
 					var d = data[i].split(' ');
 
@@ -893,7 +893,7 @@
 						var px = parseFloat(d[j]);
 						var py = parseFloat(d[j+1]);
 						var pz = parseFloat(d[j+2]);
-						
+
 						var p = new THREE.Vector3(px,py,pz);
 
 						//頂点情報の書き換え
