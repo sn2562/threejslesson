@@ -151,9 +151,8 @@ THREE.TrackballControls = function ( object, domElement ) {
 	}() );
 
 	this.rotateCamera = ( function() {
-		if(rotateCamera)
+		if(printLog)
 			console.log("rotateCamera");
-
 
 		var axis = new THREE.Vector3(),
 			quaternion = new THREE.Quaternion(),
@@ -206,7 +205,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 		};
 
-	}() );
+	});
 
 
 	this.zoomCamera = function () {
