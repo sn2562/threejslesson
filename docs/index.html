@@ -246,13 +246,13 @@
 				sketchGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );//線のつなぎ方を設定
 
 				var sketchMaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors,linewidth: 8});
-//				sketchMaterial.depthTest = false;//隠面処理をしない
+				//				sketchMaterial.depthTest = false;//隠面処理をしない
 
 				object_s = new THREE.LineSegments( sketchGeometry, sketchMaterial );
 				//スケッチを全てのデータより手前に表示
-//				object_s.scale.set( 1.0,1.0,1.0 );//スケッチをちょっと大きくする
-//				object_s.position.set( 0,0,0 );//デプスデータよりも手前にずらす
-//				object_s.renderOrder = 1;
+				//				object_s.scale.set( 1.0,1.0,1.0 );//スケッチをちょっと大きくする
+				//				object_s.position.set( 0,0,0 );//デプスデータよりも手前にずらす
+				//				object_s.renderOrder = 1;
 
 				group.add( object_s );
 
@@ -277,7 +277,7 @@
 				object_us.scale.set( 1.05,1.05,1.05 );//スケッチをちょっと大きくする
 				object_us.position.set( 0,0,1 );//デプスデータよりも手前にずらす
 				group.add( object_us );
-				
+
 
 
 				//raycaste
@@ -667,7 +667,6 @@
 				//mode:0 ドラッグ mode:1 クリック(ドラッグの開始)
 
 				var rect = event.target.getBoundingClientRect();
-				console.log(rect);
 
 				//スケッチモードで対象がキャンバスなら実行する
 				//				if(sketchMode && width == rect.width){
@@ -700,15 +699,22 @@
 						if( p.z==z0 ) return;
 
 						next = usersSketchData.vertices.length;//一つ前の座標の添字
+						var next = 0;
+						//一つ前の添字を出す ... 追加されているポイント数を数え上げる
+						for( var i=0 ; i<usersSketchData.vertices.length; i++ ){
+							next = next + usersSketchData.vertices[i].length;
+						}
 
 						if(mode==1){
+							console.log(usersSketchData.vertices[usersSketchData.vertices.length-1].length);
 							//新しいスケッチストロークを追加
 							if(usersSketchData.vertices[usersSketchData.vertices.length-1].length==0){
 								//前の線に座標が含まれていなかったらその線に追加していく
 								usersSketchData.vertices[usersSketchData.vertices.length-1].push(p);
 
 							}else{//前の線に座標が含まれていたら線を新しく追加
-								usersSketchData.vertices.push([p]);
+								usersSketchData.vertices.push([]);
+								usersSketchData.vertices[usersSketchData.vertices.length-1].push(p);
 							}
 							usersSketchData.colors.push(c);//色を追加
 
@@ -728,7 +734,7 @@
 
 						}else{
 							//その後ストロークに含まれるポイントの追加
-							usersSketchData.vertices.push(p); //構成点を追加
+							usersSketchData.vertices[usersSketchData.vertices.length-1].push(p); //構成点を追加
 							usersSketchData.colors.push(c);;//線の色
 
 							//頂点情報の書き換え
@@ -780,6 +786,41 @@
 				}
 			}
 
+			function getStrokeData(){
+				//スケッチデータの処理
+				//1行目 DATE 保存日時
+				//2行目 LINES Line数
+				//3行目以降 1行1ストローク [色 太さ P1座標 P1座標 P2座標 P3座標...]
+				var DataNmae = "SKETCH_";
+				var now = new Date();
+
+				var outputText = "DATE "+Date+"\r\n";
+
+				if(usersSketchData.vertices.length==1){//スケッチなし
+					outputText = outputText + "LINES 0";
+					return outputText;
+				}
+
+				var lineWidth = 12;//ストロークサイズはいまのところ決めうち
+
+				//全てのスケッチストロークデータについて行う
+				console.log(usersSketchData.vertices.length);
+				console.log(usersSketchData.vertices[0].length);
+				for( var i=0 ; i<usersSketchData.vertices.length ; i++ ){
+					for ( var j=0;j<usersSketchData.vertices[i].length ; j++ ){
+
+					}
+					var p = usersSketchData.vertices[i];//座標
+					var c = "0x"+usersSketchData.colors[i].getHexString();//色情報 0xFFFFFF
+					var row = c+" "+lineWidth+" "+p.x+" "+p.y+" "+p.z+"\r\n";
+					outputText = outputText + row;					
+				}
+
+				//				console.log(outputText);
+
+				return outputText;
+			}
+
 			function downloadFile(e){
 				var STATE = { TEXT: 0, CANVAS: 1 };
 				var filteName = "test";//保存する時のファイル名
@@ -787,7 +828,8 @@
 				if(e.value == STATE.TEXT){
 					console.log("save txt");
 					var textData ="testだよ";
-					download.downloadTXT_U(textData,filteName);
+					//					download.downloadTXT_U(textData,filteName);
+					getStrokeData();
 
 				}else if(e.value == STATE.CANVAS){
 					console.log("save canvas");
