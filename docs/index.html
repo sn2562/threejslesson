@@ -229,13 +229,19 @@
 				scene.add(testObject);
 				console.log("test");
 
-				//座標書き換えを実行
+				//座標と色の書き換えを実行
 				var position = testGeometry.attributes.position.array;
+				var color = testGeometry.attributes.color.array;
 				for( var i=0 ; i<allData[1].depthData.vertices.length ; i++ ){
 					var p = allData[1].depthData.vertices[i];
 					position[i*3] = p.x;
 					position[i*3+1] = p.y;
 					position[i*3+2] = p.z;
+					
+					var rgb = allData[1].depthData.colors[i].toArray();
+					color[i*3] = rgb[0];
+					color[i*3+1] = rgb[1];
+					color[i*3+2] = rgb[2];
 				}
 
 
