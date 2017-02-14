@@ -40,21 +40,25 @@
 
 			//load Files
 			var dataPath = [
-				'Box_front',
+				//				'Box_front',
 				//				'Box_side',
 				//				'takeu',
-				'guitar',
+				//				'guitar',
 				//				'Hungry',
 				//				'anim01',
 				//				'anim02',
 				//				'anim03',
-				'SpeakerDoll',
+				//				'SpeakerDoll',
 				//				'kt',
 				//				'TDNaru',
 				//				'Box_side_m',
 				//				'takeu_m',
-				'Hungry_m',
-				'CafeEN'
+				//				'Hungry_m',
+				//				'CafeEN'
+				'anim01',
+				'anim02',
+				'anim03',
+				'anim02'
 			];//読み込みファイル一覧
 			for(var i=0;i<dataPath.length;i++){
 				dataPath[i] = "data/"+dataPath[i]+".dsddata.txt";
@@ -122,7 +126,7 @@
 			var usersSketchGeometry;
 
 			//Animation
-			var isAnimation = false;//animation mode
+			var isAnimation = true;//animation mode
 			var animOrder = [0,1,2,1];//読み込みデータに応じて表示順序を指示
 			var animIndex = 0;//
 			//calc framerate
@@ -972,7 +976,7 @@
 			<br>
 			<br>
 			<br>
-			<a href="animation_index.html">Animation Viewer</a>
+			<a href="index.html">Back Basic Viewer</a>
 
 
 			<!--
