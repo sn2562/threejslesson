@@ -89,15 +89,15 @@
 
 			//objects
 			var group = null;
-			var object_d, object_s, object_us;
+			var object_s, object_us;
 
 			//depthdata
 			var step = 5;//デプスデータの表示数を減らして軽くする
-			var depthGeometry = null;
+//			var depthGeometry = null;
 
 			var depthStep = 5;//デプスデータの表示数を減らして軽くする
-			var testGeometry;
-			var testObject;
+			var depthGeometry;
+			var depthObject;
 
 
 			//sketchdata
@@ -172,28 +172,21 @@
 				group = new THREE.Object3D();//表示グループ
 				//				scene.add(group);
 
-
-
-
-
-
-
-
 				//Depth Objects with Buffer Geometry
 				//後から座標と色を書き換える前提で領域を確保しておく
 				var max = 100000;//360 * 480より多めに頂点を用意;
 				positions_ = new Float32Array(max*3*3);//デプスデータの構成点(x,y,z座標分)で初期化
 				colors_ = new Float32Array(max*3*3);//点に対応する色情報(r,g,b情報分)で初期化
 				//ジオメトリを設定
-				testGeometry = new THREE.BufferGeometry();
-				testGeometry.addAttribute( 'position', new THREE.BufferAttribute( positions_ , 3 ) );//構成点を設定
-				testGeometry.addAttribute( 'color', new THREE.BufferAttribute( colors_ , 3 ) );//色情報を設定
+				depthGeometry = new THREE.BufferGeometry();
+				depthGeometry.addAttribute( 'position', new THREE.BufferAttribute( positions_ , 3 ) );//構成点を設定
+				depthGeometry.addAttribute( 'color', new THREE.BufferAttribute( colors_ , 3 ) );//色情報を設定
 				//マテリアルを設定
-				var testMaterial = new THREE.PointsMaterial( { size: 15, vertexColors: THREE.VertexColors, opacity:1 } );//見た目を設定
+				var depthMaterial = new THREE.PointsMaterial( { size: 15, vertexColors: THREE.VertexColors, opacity:1 } );//見た目を設定
 				//オブジェクトを設定
-				testObject = new THREE.Points( testGeometry, testMaterial );//オブジェクトの作成
-				testObject.visible = true;//表示,非表示設定
-				scene.add(testObject);
+				depthObject = new THREE.Points( depthGeometry, depthMaterial );//オブジェクトの作成
+				depthObject.visible = true;//表示,非表示設定
+				scene.add(depthObject);
 
 				//Sketch Stroke Objects with Buffer Geometry
 
@@ -569,7 +562,7 @@
 
 			function changeDrawData(idx){
 				//idx番目のデータに描画内容を書き換える
-				
+
 				nowDataNumber = idx;
 				//sketch data
 				var s_start = 0;
@@ -585,10 +578,10 @@
 
 				//depthData
 				//座標と色の書き換えを実行
-				testGeometry.attributes.position.needsUpdate = true;//頂点座標の書き換えを許可
-				testGeometry.attributes.color.needsUpdate = true;//色情報の書き換えを許可
-				var position = testGeometry.attributes.position.array;
-				var color = testGeometry.attributes.color.array;
+				depthGeometry.attributes.position.needsUpdate = true;//頂点座標の書き換えを許可
+				depthGeometry.attributes.color.needsUpdate = true;//色情報の書き換えを許可
+				var position = depthGeometry.attributes.position.array;
+				var color = depthGeometry.attributes.color.array;
 
 				var endOfRange = 0;
 				for( var i=0 ; i<allData[nowDataNumber].depthData.vertices.length ; i++ ){
@@ -606,7 +599,7 @@
 					color[i*3+2] = rgb[2];
 				}
 				var endOfRange = allData[nowDataNumber].depthData.vertices.length*3;//表示領域の最後尾
-				testGeometry.setDrawRange(0,endOfRange);//表示領域を再設定
+				depthGeometry.setDrawRange(0,endOfRange);//表示領域を再設定
 			}
 
 			//DOM側から実行する関数
@@ -643,7 +636,7 @@
 			function changeShowData(e){
 				//value = 0ならdepth,1ならsketchの表示を切り替える
 				if( e.value==0 ){
-					testObject.visible = e.checked;
+					depthObject.visible = e.checked;
 				}else if( e.value==1 ){
 					object_s.visible = e.checked;
 				}else if( e.value==2 ){
