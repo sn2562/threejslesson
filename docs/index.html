@@ -662,6 +662,8 @@
 				}
 				userSketchGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );//線のつなぎ方を設定
 				userSketchGeometry.setDrawRange(0,nowIndex*3);//表示領域を再設定
+
+				renderer.render(scene, camera);//表示を更新
 			}
 
 			//DOM側から実行する関数
