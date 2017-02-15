@@ -89,7 +89,6 @@
 
 			//objects
 			var group = null;
-			var loadedSketchObject;
 
 			//depthdata
 			var depthStep = 5;//デプスデータの表示数を減らして軽くする
@@ -104,14 +103,20 @@
 			var userSketchGeometry;
 			var userSketchObject;
 
+			//loaded Sketch Data
+			var loadedSketchObject;
+			var loadedSketchGeometry;
 
 			//現在の選択データ
 			var nowDataNumber = 0;
 
+			//Datas
 			var allData = [];
-			var indices_array = [];//スケッチデータのどの点同士をつなぐか
-			var sketch_endpoints = [];//データの区切り位置を保存
-			var depth_endpoints = [];//データの区切り位置を保存
+			var loadedSketchData = {
+				"vertices": [],
+				"colors": [],
+				"lineWidth":[]
+			};
 
 			//users sketch data
 			var sketchMode = true;
@@ -126,14 +131,6 @@
 				"indices_array":[],
 				"endpoints":0
 			};
-
-			var loadedSketchData = {
-				"vertices": [],
-				"colors": [],
-				"lineWidth":[]
-			};
-			var loadedSketchGeometry;
-
 			//Animation
 			var isAnimation = false;//animation mode
 			var animOrder = [0,1,2,1];//読み込みデータに応じて表示順序を指示
@@ -624,7 +621,6 @@
 			}
 
 			function showUserSketchData(){
-				console.log("are~",allData[nowDataNumber].userSketchData.vertices.length);
 				//user sketch data
 				//座標と色の書き換えを実行
 				userSketchGeometry.attributes.position.needsUpdate = true;//頂点座標の書き換えを許可
@@ -750,8 +746,9 @@
 
 						if(mode==1){//マウスを押した瞬間なら
 							//新しいスケッチストロークを追加
-							if( allData[nowDataNumber].userSketchData.vertices[usersSketchData.vertices.length-1].length != 0 ){//一つ前に線があれば、新しい線を追加
-								console.log("newline");
+							var length = allData[nowDataNumber].userSketchData.vertices.length;
+							var l = allData[nowDataNumber].userSketchData.vertices.length;
+							if( allData[nowDataNumber].userSketchData.vertices[l-1].length != 0 ){//一つ前に線があれば、新しい線を追加
 								allData[nowDataNumber].userSketchData.vertices.push([]);
 							}
 							allData[nowDataNumber].userSketchData.colors.push(c);//色を追加
@@ -759,8 +756,6 @@
 						var length = allData[nowDataNumber].userSketchData.vertices.length;
 						allData[nowDataNumber].userSketchData.vertices[length-1].push(p);
 					}
-
-					console.log("1 ",allData[nowDataNumber].userSketchData.vertices.length);
 
 					showUserSketchData();//表示の更新
 
@@ -940,7 +935,7 @@
 					loadedSketchData.vertices.push(points);
 				}
 				loadedSketchGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );//線のつなぎ方を設定
-				//				loadedSketchGeometry.setDrawRange(0,nowIndex*3);//表示領域を再設定
+				loadedSketchGeometry.setDrawRange(0,nowIndex*3);//表示領域を再設定
 				loadedSketchObject.visible = true;//表示,非表示設定
 				renderer.render(scene, camera);
 			}
