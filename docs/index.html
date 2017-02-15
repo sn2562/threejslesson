@@ -114,7 +114,7 @@
 			var depth_endpoints = [];//データの区切り位置を保存
 
 			//users sketch data
-			var sketchMode = false;
+			var sketchMode = true;
 			var usersSketchData =  {
 				"maxpoints": 100000,
 				"lines": 0,
@@ -209,11 +209,7 @@
 				userSketchObject = new THREE.LineSegments( userSketchGeometry, userSketchMaterial );
 				group.add( userSketchObject );
 
-
-
-
 				changeDrawData(nowDataNumber);//描画範囲を現在のデータのみに絞る
-
 
 				//Loaded Sketch Stroke Objects with Buffer Geometry
 				var maxpoints = usersSketchData.maxpoints;
@@ -430,7 +426,6 @@
 						if(i==0){
 							button.checked = "true"
 						}
-
 						//最後の子要素として追加
 						label.appendChild(button);
 						var num = i+1;
@@ -780,7 +775,7 @@
 
 					console.log("1 ",allData[nowDataNumber].userSketchData.vertices.length);
 
-					showUserSketchData();//表示の更新 TODO 直す
+					showUserSketchData();//表示の更新
 
 					//raycaster
 					raycaster.setFromCamera( mouse, camera );
@@ -817,30 +812,43 @@
 
 				var outputText = "DATE "+now+"\r\n";
 
-				//スケッチなしの場合
-				if(usersSketchData.vertices.length==1){
-					return 0;
-				}
+				//チェックボックスの状態を取得して書き出すストロークを決める
+				var chxBox = document.getElementById("changeVisibility").getElementsByTagName("input");;
 
-				var lineWidth = 12;//ストロークサイズはいまのところ決めうち
+				var lineWidth = 0;//ストロークサイズはいまのところ決めうち
 
-				//全てのスケッチストロークデータについて行う
-				for( var i=0 ; i<usersSketchData.vertices.length ; i++ ){
-					//色情報
-					var c = "0x"+usersSketchData.colors[i].getHexString();//0xFFFFFF
-					var line = "";
+				if(chxBox[1].checked){
+					//読み込み済みのスケッチを保存
+					for( var i=0 ; i<allData[nowDataNumber].sketchData.vertices.length ; i++ ){
+						//色情報
+						var c = "0x"+allData[nowDataNumber].sketchData.colors[i].getHexString();//0xFFFFFF
+						var line = "";
 
-					for ( var j=0;j<usersSketchData.vertices[i].length ; j++ ){
-						//座標
-						var p = usersSketchData.vertices[i][j];
-						line = line+" "+p.x+" "+p.y+" "+p.z;
+						for ( var j=0;j<allData[nowDataNumber].sketchData.vertices[i].length ; j++ ){
+							//座標
+							var p = allData[nowDataNumber].sketchData.vertices[i][j];
+							line = line+" "+p.x+" "+p.y+" "+p.z;
+						}
+						var row = c+" "+lineWidth+line+"\r\n";
+						outputText = outputText + row;
 					}
-					var row = c+" "+lineWidth+line+"\r\n";
-					outputText = outputText + row;
 				}
+				if(chxBox[2].checked){
+					//ユーザのスケッチを保存
+					for( var i=0 ; i<allData[nowDataNumber].userSketchData.vertices.length ; i++ ){
+						//色情報
+						var c = "0x"+allData[nowDataNumber].userSketchData.colors[i].getHexString();//0xFFFFFF
+						var line = "";
 
-				console.log("outputText",outputText);
-
+						for ( var j=0;j<allData[nowDataNumber].userSketchData.vertices[i].length ; j++ ){
+							//座標
+							var p = allData[nowDataNumber].userSketchData.vertices[i][j];
+							line = line+" "+p.x+" "+p.y+" "+p.z;
+						}
+						var row = c+" "+lineWidth+line+"\r\n";
+						outputText = outputText + row;
+					}
+				}
 				return outputText;
 			}
 			//ユーザスケッチをダウンロード
@@ -958,7 +966,7 @@
 		<div id="controles">
 			<input id="changeMode" type="checkbox" data-toggle="toggle" checked data-on="Sketch Mode" data-off="View Mode">
 
-			<div class="checkbox">
+			<div class="checkbox" id="changeVisibility">
 				<label><input type="checkbox" value="0" onclick="changeVisible(this)">Depth Data</label>
 				<label><input type="checkbox" value="1" onclick="changeVisible(this)" checked>Sketch Data</label>
 				<label><input type="checkbox" value="2" onclick="changeVisible(this)" checked>Your Sketch Data</label>
@@ -981,14 +989,10 @@
 				<button type="submit" class="btn btn-success" onclick="resetView()">RESET VIEWPOINT</button>
 			</div>
 
-
 			<!-- show sketch list -->
 
 			<div id="datalist">
 			</div>
-
-
-
 
 			<br>
 			<br>
