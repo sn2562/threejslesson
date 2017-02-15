@@ -170,8 +170,9 @@
 				var positions_;//すべての構成点
 				var colors_;//すべての構成色情報
 
-				//Depth Objects with Buffer Geometry
 				//後から座標と色を書き換える前提で領域を確保しておく
+
+				//Depth Objects with Buffer Geometry
 				var max = 100000;//360 * 480より多めに頂点を用意;
 				positions_ = new Float32Array(max*3*3);//デプスデータの構成点(x,y,z座標分)で初期化
 				colors_ = new Float32Array(max*3*3);//点に対応する色情報(r,g,b情報分)で初期化
@@ -187,8 +188,6 @@
 				scene.add(depthObject);
 
 				//Sketch Stroke Objects with Buffer Geometry
-
-				//TODO Sketch dataを表示
 				positions_ = new Float32Array(max*3*3);//デプスデータの構成点(x,y,z座標分)で初期化
 				colors_ = new Float32Array(max*3*3);//点に対応する色情報(r,g,b情報分)で初期化
 
@@ -201,7 +200,7 @@
 
 				changeDrawData(nowDataNumber);//描画範囲を現在のデータのみに絞る
 
-				
+
 				//Users Sketch Stroke Objects with Buffer Geometry
 				var maxpoints = usersSketchData.maxpoints;
 				indices_array = usersSketchData.indices_array;//構成点をどうやってつなぐか
@@ -438,9 +437,22 @@
 				var sketch_index = data[2].split(' ').map(Number);//数値に変換
 
 				//PCD部分とSKETCH部分をそれぞれ取り出して、perseする
-				var newData ={"depthData":{},
-							  "sketchData":{},
-							 };
+				var newData ={
+					"depthData":{
+						"vertices": [],
+						"colors": []
+					},
+					"sketchData":{
+						"vertices": [],
+						"colors": [],
+						"lineWidth":[]
+					},
+					"userSketchData":{
+						"vertices": [],
+						"colors": [],
+						"lineWidth":[]
+					}
+				};
 				allData.push(newData);
 
 				persePCD(data.slice(pcd_index[1], pcd_index[2]));//デプスデータの準備
@@ -448,13 +460,7 @@
 			}
 
 			function persePCD(data){
-				//				var data = data.split(/\r\n|\r|\n/);// 行ごとに分割
-
-				var dData = {
-					"points": 0,
-					"vertices": [],
-					"colors": [],
-				};
+				var dData = allData[allData.length-1].depthData
 
 				//PCDは10行目から
 				for(var i=10;i<data.length;i++){
@@ -471,24 +477,13 @@
 
 					dData.vertices.push(new THREE.Vector3(px,py,pz));
 				}
-				dData.points = dData.vertices.length;
-				allData[allData.length-1].depthData = dData;
 			}
 
 			function perseSketchData(data){
 				//スケッチデータの処理
 				//形式 1行ストローク [色 太さ P1座標 P1座標 P2座標 P3座標...]
-
-				var sData = {
-					"lines": 0,
-					"vertices": [],
-					"positions_": [],
-					"colors": [],
-					"colors_": [],
-					"lineWidth":[],
-					"endpoint":[]
-				};
-
+				var sData = allData[allData.length-1].sketchData;
+				
 				for(var i=0;i<data.length;i++){
 					var d = data[i].split(' ');
 
@@ -499,9 +494,9 @@
 					//線の太さ
 					var w = parseInt(d[1]);// 太さ情報
 					sData.lineWidth.push(w);
-					var points = [];
 
 					//座標情報
+					var points = [];
 					for(var j=2 ; j<d.length ; j=j+3){
 						var px = parseFloat(d[j]);
 						var py = parseFloat(d[j+1]);
@@ -511,9 +506,6 @@
 					}
 					sData.vertices.push(points);
 				}
-				sData.lines = sData.colors.length;
-
-				allData[allData.length-1].sketchData = sData;
 			}
 
 			function changeDrawData(idx){
