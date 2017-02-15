@@ -668,11 +668,12 @@
 				controls.reset();//始点をリセットする
 			}
 			function deleteSketch(){
-				//TODO
-
-				//更新
-
-				renderer.render(scene, camera);
+				//現在表示中のスケッチデータを削除する
+				//初期化
+				allData[nowDataNumber].userSketchData.colors=[];
+				allData[nowDataNumber].userSketchData.vertices=[[]];
+				allData[nowDataNumber].userSketchData.lineWidth=[];
+				showUserSketchData();//表示の更新
 			}
 			//depth data,sketch data の表示/非表示切り替え
 			function changeVisible(e){
