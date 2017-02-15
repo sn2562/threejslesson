@@ -695,7 +695,7 @@
 				renderer.render(scene, camera);
 			}
 			//depth data,sketch data の表示/非表示切り替え
-			function changeShowData(e){
+			function changeVisible(e){
 				//value = 0ならdepth,1ならsketchの表示を切り替える
 				if( e.value==0 ){
 					depthObject.visible = e.checked;
@@ -957,9 +957,9 @@
 			<input id="changeMode" type="checkbox" data-toggle="toggle" checked data-on="Sketch Mode" data-off="View Mode">
 
 			<div class="checkbox">
-				<label><input type="checkbox" value="0" onclick="changeShowData(this)">Depth Data</label>
-				<label><input type="checkbox" value="1" onclick="changeShowData(this)" checked>Sketch Data</label>
-				<label><input type="checkbox" value="2" onclick="changeShowData(this)" checked>Your Sketch Data</label>
+				<label><input type="checkbox" value="0" onclick="changeVisible(this)">Depth Data</label>
+				<label><input type="checkbox" value="1" onclick="changeVisible(this)" checked>Sketch Data</label>
+				<label><input type="checkbox" value="2" onclick="changeVisible(this)" checked>Your Sketch Data</label>
 			</div>
 
 			<br>
