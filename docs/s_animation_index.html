@@ -40,21 +40,10 @@
 
 			//load Files
 			var dataPath = [
-				'Box_front',
-				//				'Box_side',
-				//				'takeu',
-				'guitar',
-				//				'Hungry',
-				//				'anim01',
-				//				'anim02',
-				//				'anim03',
-				'SpeakerDoll',
-				//				'kt',
-				//				'TDNaru',
-				//				'Box_side_m',
-				//				'takeu_m',
-				'Hungry_m',
-				'CafeEN'
+				'anim01',
+				'anim02',
+				'anim03',
+				'anim02'
 			];//読み込みファイル一覧
 			for(var i=0;i<dataPath.length;i++){
 				dataPath[i] = "data/"+dataPath[i]+".dsddata.txt";
@@ -107,7 +96,7 @@
 			var depth_endpoints = [];//データの区切り位置を保存
 
 			//users sketch data
-			var sketchMode = true;
+			var sketchMode = false;
 			var usersSketchData =  {
 				"maxpoints": 100000,
 				"lines": 0,
@@ -122,7 +111,7 @@
 			var usersSketchGeometry;
 
 			//Animation
-			var isAnimation = false;//animation mode
+			var isAnimation = true;//animation mode
 			var animOrder = [0,1,2,1];//読み込みデータに応じて表示順序を指示
 			var animIndex = 0;//
 			//calc framerate
@@ -139,6 +128,8 @@
 					//						window.scrollTo(0,1);
 					//					}, 1);
 				}
+				//ボタンの設定初期化
+				$("#changeMode").prop('checked', sketchMode);
 			}
 
 			function ready(){
@@ -324,8 +315,6 @@
 					resize();
 					onPC = false;
 				}
-				//ボタンの設定初期化
-				$("#changeMode").prop('checked', sketchMode);
 
 				render();//描画
 				animate();
@@ -957,7 +946,7 @@
 					<input type="radio" name="inlineRadioOptions" id="inlineRadio2" value="option2" onclick="changeControl(1)"> ZOOM IN/OUT
 				</label>
 				<label class="radio-inline">
-					<input type="radio" name="inlineRadioOptions" id="inlineRadio3" value="option3" onclick="changeControl(2)"> TRANSLATE
+					<input type="radio" name="inlineRadioOptions" id="inlineRadio3" value="option3" onclick="changeControl(2)"> MOVE
 				</label>
 				<br>
 				<br>
@@ -984,6 +973,14 @@
 			<input type="file" id="files" name="files[]" multiple />
 
 
+			<br>
+			<br>
+			<br>
+			<br>
+			<a href="s_index.html">→Back to Ordinary Viewer</a>
+			<br>
+			<br>
+			<br>
 			<br>
 		</div>
 

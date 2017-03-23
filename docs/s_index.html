@@ -107,7 +107,7 @@
 			var depth_endpoints = [];//データの区切り位置を保存
 
 			//users sketch data
-			var sketchMode = true;
+			var sketchMode = false;
 			var usersSketchData =  {
 				"maxpoints": 100000,
 				"lines": 0,
@@ -139,6 +139,8 @@
 					//						window.scrollTo(0,1);
 					//					}, 1);
 				}
+				//ボタンの設定初期化
+				$("#changeMode").prop('checked', sketchMode);
 			}
 
 			function ready(){
@@ -324,8 +326,6 @@
 					resize();
 					onPC = false;
 				}
-				//ボタンの設定初期化
-				$("#changeMode").prop('checked', sketchMode);
 
 				render();//描画
 				animate();
@@ -957,7 +957,7 @@
 					<input type="radio" name="inlineRadioOptions" id="inlineRadio2" value="option2" onclick="changeControl(1)"> ZOOM IN/OUT
 				</label>
 				<label class="radio-inline">
-					<input type="radio" name="inlineRadioOptions" id="inlineRadio3" value="option3" onclick="changeControl(2)"> TRANSLATE
+					<input type="radio" name="inlineRadioOptions" id="inlineRadio3" value="option3" onclick="changeControl(2)"> MOVE
 				</label>
 				<br>
 				<br>
@@ -984,6 +984,15 @@
 			<input type="file" id="files" name="files[]" multiple />
 
 
+			<br>
+			<br>
+			<br>
+			<br>
+			<a href="s_animation_index.html">→Animation Viewer</a>
+
+			<br>
+			<br>
+			<br>
 			<br>
 		</div>
 
