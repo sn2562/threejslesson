@@ -40,7 +40,7 @@
 
 			//load Files
 			var dataPath = [
-				'Box_front',
+				//				'Box_front',
 				//				'Box_side',
 				//				'takeu',
 				'guitar',
@@ -48,12 +48,12 @@
 				//				'anim01',
 				//				'anim02',
 				//				'anim03',
-				'SpeakerDoll',
+				//				'SpeakerDoll',
 				//				'kt',
 				//				'TDNaru',
 				//				'Box_side_m',
 				//				'takeu_m',
-				'Hungry_m',
+				//				'Hungry_m',
 				'CafeEN'
 			];//読み込みファイル一覧
 			for(var i=0;i<dataPath.length;i++){
@@ -89,22 +89,34 @@
 
 			//objects
 			var group = null;
-			var object_d, object_s, object_us;
 
 			//depthdata
-			var step = 5;//デプスデータの表示数を減らして軽くする
-			var depthGeometry = null;
+			var depthStep = 5;//デプスデータの表示数を減らして軽くする
+			var depthGeometry;
+			var depthObject;
 
 			//sketchdata
 			var sketchGeometry;
+			var sketchObject;
+
+			//user Sketch Data
+			var userSketchGeometry;
+			var userSketchObject;
+
+			//loaded Sketch Data
+			var loadedSketchObject;
+			var loadedSketchGeometry;
 
 			//現在の選択データ
 			var nowDataNumber = 0;
 
+			//Datas
 			var allData = [];
-			var indices_array = [];//スケッチデータのどの点同士をつなぐか
-			var sketch_endpoints = [];//データの区切り位置を保存
-			var depth_endpoints = [];//データの区切り位置を保存
+			var loadedSketchData = {
+				"vertices": [],
+				"colors": [],
+				"lineWidth":[]
+			};
 
 			//users sketch data
 			var sketchMode = true;
@@ -119,8 +131,6 @@
 				"indices_array":[],
 				"endpoints":0
 			};
-			var usersSketchGeometry;
-
 			//Animation
 			var isAnimation = false;//animation mode
 			var animOrder = [0,1,2,1];//読み込みデータに応じて表示順序を指示
@@ -158,126 +168,66 @@
 
 
 				//Axis
-				//				drawAxis();
+				drawAxis();
 
 
 				//Objects
-				var positions_;//すべての構成点
-				var colors_;//すべての構成色情報
 				group = new THREE.Object3D();//表示グループ
 				scene.add(group);
+				var positions_;//すべての構成点
+				var colors_;//すべての構成色情報
 
+				//後から座標と色を書き換える前提で領域を確保しておく
 
 				//Depth Objects with Buffer Geometry
-				var depthPoints = [];
-				var depthColor = [];
+				var max = 100000;//360 * 480より多めに頂点を用意;
 
-				positions_ = [];//すべてのスケッチの構成点
-				colors_ = [];//すべてのスケッチの色情報
-
-				for(var i=0;i<allData.length;i++){
-					for( var j=0 ; j<allData[i].depthData.vertices.length ; j=j+step ){
-						// positions
-						var p = allData[i].depthData.vertices[j];
-						//もしdepthが0以上なら描画用に再設定
-						if( p.z != z0 ){
-							positions_.push(p.x, p.y, p.z);
-							// colors
-							var c = allData[i].depthData.colors[j].toArray();
-							colors_.push(c[0],c[1],c[2]);//BGRの順に登録
-						}
-					}
-					allData[i].depthData.endpoint = positions_.length/3;
-				}
-
+				positions_ = new Float32Array(max*3*3);//デプスデータの構成点(x,y,z座標分)で初期化
+				colors_ = new Float32Array(max*3*3);//点に対応する色情報(r,g,b情報分)で初期化
+				//ジオメトリを設定
 				depthGeometry = new THREE.BufferGeometry();
-				depthGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( positions_ ), 3 ) );//構成点
-				depthGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( colors_ ), 3 ) );//色
-
-				var depthMaterial = new THREE.PointsMaterial( { size: 15, vertexColors: THREE.VertexColors, opacity:0.4, depthTest:true } );
-
-				object_d = new THREE.Points( depthGeometry, depthMaterial );
-				object_d.visible = false;//重いので最初は非表示
-				scene.add(object_d);
-
+				depthGeometry.addAttribute( 'position', new THREE.BufferAttribute( positions_ , 3 ) );//構成点を設定
+				depthGeometry.addAttribute( 'color', new THREE.BufferAttribute( colors_ , 3 ) );//色情報を設定
+				//マテリアルを設定
+				var depthMaterial = new THREE.PointsMaterial( { size: 15, vertexColors: THREE.VertexColors, opacity:1 } );//見た目を設定
+				//オブジェクトを設定
+				depthObject = new THREE.Points( depthGeometry, depthMaterial );//オブジェクトの作成
+				depthObject.visible = false;//表示,非表示設定
+				scene.add(depthObject);
 
 				//Sketch Stroke Objects with Buffer Geometry
-
-				indices_array = [];//構成点をどうやってつなぐか
-				positions_ = [];//すべてのスケッチの構成点
-				colors_ = [];//すべてのスケッチの色情報
-
-				var next = 0;
-				for( var i=0; i<allData.length ; i++){//全ての登録データについて行う
-					for( var j=0 ; j<allData[i].sketchData.vertices.length ; j++){//全ての線点について行う
-						if(allData[i].sketchData.vertices[j].length != 0){//構成点があるなら実行
-
-							//最初の座標
-							var p = allData[i].sketchData.vertices[j][0];
-							positions_.push(p.x,p.y,p.z);//最初の点を追加する
-
-							//線の色
-							var rgb = allData[i].sketchData.colors[j].toArray();
-							colors_.push(rgb[0],rgb[1],rgb[2]);;//最初の色を追加する
-
-							//最初の点以降を全て追加する
-							for( var k=1 ; k<allData[i].sketchData.vertices[j].length ; k++ ){//線を構成する最後の点まで参照する
-								//座標
-								var p = allData[i].sketchData.vertices[j][k];
-								positions_.push(p.x,p.y,p.z); //構成点を追加
-
-								//色
-								colors_.push(rgb[0],rgb[1],rgb[2]);;//線の色を
-
-								//次の点の登録添字
-								next = next+1;
-								indices_array.push( next-1, next );//ひとつ前の登録点とつなぐように設定
-							}
-							next++;//線の区切り添字を一つ次に飛ばして、前の線と連結されないようにする
-						}
-					}
-					allData[i].sketchData.endpoint = indices_array.length;
-					sketch_endpoints.push(indices_array.length);//データごとの区切り - endpointsを記録する
-					//ちなみに、endpointは lineの構成点総数*2 - line数*2 で計算できる(はず)
-				}
+				positions_ = new Float32Array(max*3*3);//デプスデータの構成点(x,y,z座標分)で初期化
+				colors_ = new Float32Array(max*3*3);//点に対応する色情報(r,g,b情報分)で初期化
 				sketchGeometry = new THREE.BufferGeometry();
 				sketchGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( positions_ ), 3 ) );//構成点
 				sketchGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( colors_ ), 3 ) );//色
-				sketchGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );//線のつなぎ方を設定
+				var sketchMaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors,linewidth: 8});//線の見え方を設定
+				sketchObject = new THREE.LineSegments( sketchGeometry, sketchMaterial );
+				group.add( sketchObject );
 
-				var sketchMaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors,linewidth: 8});
-				//				sketchMaterial.depthTest = false;//隠面処理をしない
 
-				object_s = new THREE.LineSegments( sketchGeometry, sketchMaterial );
-				//スケッチを全てのデータより手前に表示
-				//				object_s.scale.set( 1.0,1.0,1.0 );//スケッチをちょっと大きくする
-				//				object_s.position.set( 0,0,0 );//デプスデータよりも手前にずらす
-				//				object_s.renderOrder = 1;
-
-				group.add( object_s );
+				//User Sketch Stroke Objects with Buffer Geometry
+				positions_ = new Float32Array(max*3*3);//デプスデータの構成点(x,y,z座標分)で初期化
+				colors_ = new Float32Array(max*3*3);//点に対応する色情報(r,g,b情報分)で初期化
+				userSketchGeometry = new THREE.BufferGeometry();
+				userSketchGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( positions_ ), 3 ) );//構成点
+				userSketchGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( colors_ ), 3 ) );//色
+				var userSketchMaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors,linewidth: 8});//線の見え方を設定
+				userSketchObject = new THREE.LineSegments( userSketchGeometry, userSketchMaterial );
+				group.add( userSketchObject );
 
 				changeDrawData(nowDataNumber);//描画範囲を現在のデータのみに絞る
 
-
-				//Users Sketch Stroke Objects with Buffer Geometry
-				var maxpoints = usersSketchData.maxpoints;
-				indices_array = usersSketchData.indices_array;//構成点をどうやってつなぐか
-				positions_ = usersSketchData.positions_ = new Float32Array(maxpoints*3*3);//すべてのスケッチの構成点
-				colors_ = usersSketchData.colors_ = new Float32Array(maxpoints*3*3);//すべてのスケッチの色情報
-
-				usGeometry = new THREE.BufferGeometry();
-				usGeometry.addAttribute( 'position', new THREE.BufferAttribute( positions_ , 3 ) );//構成点
-				usGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( colors_ ), 3 ) );//色
-				usGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );//線のつなぎ方を設定
-				//				usGeometry.setDrawRange(0,usersSketchData.endpoints);//表示領域を決める
-
-				var usMaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors,linewidth: 8});
-
-				object_us = new THREE.LineSegments( usGeometry, usMaterial );
-				object_us.scale.set( 1.05,1.05,1.05 );//スケッチをちょっと大きくする
-				object_us.position.set( 0,0,1 );//デプスデータよりも手前にずらす
-				group.add( object_us );
-
+				//Loaded Sketch Stroke Objects with Buffer Geometry
+				positions_ = new Float32Array(max*3*3);//デプスデータの構成点(x,y,z座標分)で初期化
+				colors_ = new Float32Array(max*3*3);//点に対応する色情報(r,g,b情報分)で初期化
+				loadedSketchGeometry = new THREE.BufferGeometry();
+				loadedSketchGeometry.addAttribute( 'position', new THREE.BufferAttribute( positions_ , 3 ) );//構成点
+				loadedSketchGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( colors_ ), 3 ) );//色
+				var loadedSketchMaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors,linewidth: 8});
+				loadedSketchObject = new THREE.LineSegments( loadedSketchGeometry, loadedSketchMaterial );
+				loadedSketchObject.visible = false;//表示,非表示設定
+				group.add( loadedSketchObject );
 
 
 				//raycaste
@@ -452,7 +402,6 @@
 					//						console.log(i,result[0]);//data
 					//						//						console.log(i,result[1]);//textStatus
 					//						//						console.log(i,result[3]);jqXHR
-					//						console.log("test",i);
 					//					}
 
 					//それぞれについて処理する 0番目はPCD,1番目はsketchデータ
@@ -478,7 +427,6 @@
 						if(i==0){
 							button.checked = "true"
 						}
-
 						//最後の子要素として追加
 						label.appendChild(button);
 						var num = i+1;
@@ -499,9 +447,22 @@
 				var sketch_index = data[2].split(' ').map(Number);//数値に変換
 
 				//PCD部分とSKETCH部分をそれぞれ取り出して、perseする
-				var newData ={"depthData":{},
-							  "sketchData":{},
-							 };
+				var newData ={
+					"depthData":{
+						"vertices": [],
+						"colors": []
+					},
+					"sketchData":{
+						"vertices": [],
+						"colors": [],
+						"lineWidth":[]
+					},
+					"userSketchData":{
+						"vertices": [[]],
+						"colors": [],
+						"lineWidth":[]
+					}
+				};
 				allData.push(newData);
 
 				persePCD(data.slice(pcd_index[1], pcd_index[2]));//デプスデータの準備
@@ -509,14 +470,7 @@
 			}
 
 			function persePCD(data){
-				//				var data = data.split(/\r\n|\r|\n/);// 行ごとに分割
-
-				var dData = {
-					"points": 0,
-					"vertices": [],
-					"colors": [],
-					"endpoint": []
-				};
+				var dData = allData[allData.length-1].depthData
 
 				//PCDは10行目から
 				for(var i=10;i<data.length;i++){
@@ -533,23 +487,12 @@
 
 					dData.vertices.push(new THREE.Vector3(px,py,pz));
 				}
-				dData.points = dData.vertices.length;
-				allData[allData.length-1].depthData = dData;
 			}
 
 			function perseSketchData(data){
 				//スケッチデータの処理
 				//形式 1行ストローク [色 太さ P1座標 P1座標 P2座標 P3座標...]
-
-				var sData = {
-					"lines": 0,
-					"vertices": [],
-					"positions_": [],
-					"colors": [],
-					"colors_": [],
-					"lineWidth":[],
-					"endpoint":[]
-				};
+				var sData = allData[allData.length-1].sketchData;
 
 				for(var i=0;i<data.length;i++){
 					var d = data[i].split(' ');
@@ -561,9 +504,9 @@
 					//線の太さ
 					var w = parseInt(d[1]);// 太さ情報
 					sData.lineWidth.push(w);
-					var points = [];
 
 					//座標情報
+					var points = [];
 					for(var j=2 ; j<d.length ; j=j+3){
 						var px = parseFloat(d[j]);
 						var py = parseFloat(d[j+1]);
@@ -573,32 +516,149 @@
 					}
 					sData.vertices.push(points);
 				}
-				sData.lines = sData.colors.length;
-
-				allData[allData.length-1].sketchData = sData;
 			}
 
 			function changeDrawData(idx){
-				//idx番目のデータに描画を書き換える
+				//idx番目のデータに描画内容を書き換える
+				console.log("・-・");
+
 				nowDataNumber = idx;
 
-				//depth data
-				var d_start = 0;
-				var d_range = allData[nowDataNumber].depthData.endpoint;
-				//sketch data
-				var s_start = 0;
-				var s_range = allData[nowDataNumber].sketchData.endpoint;
 
-				if(nowDataNumber != 0){
-					//depth
-					d_start = allData[nowDataNumber-1].depthData.endpoint;
-					d_range = d_range - allData[nowDataNumber-1].depthData.endpoint;
-					//sketch stroke
-					s_start = allData[nowDataNumber-1].sketchData.endpoint;
-					s_range = s_range - allData[nowDataNumber-1].sketchData.endpoint;
+				//depthData
+				//座標と色の書き換えを実行
+				depthGeometry.attributes.position.needsUpdate = true;//頂点座標の書き換えを許可
+				depthGeometry.attributes.color.needsUpdate = true;//色情報の書き換えを許可
+				var position = depthGeometry.attributes.position.array;
+				var color = depthGeometry.attributes.color.array;
+
+				var endOfRange = 0;
+				for( var i=0 ; i<allData[nowDataNumber].depthData.vertices.length ; i++ ){
+					//TODO depthStepに応じて表示数を減少
+
+					//座標
+					var p = allData[nowDataNumber].depthData.vertices[i];
+					position[i*3] = p.x;
+					position[i*3+1] = p.y;
+					position[i*3+2] = p.z;
+					//色
+					var rgb = allData[nowDataNumber].depthData.colors[i].toArray();
+					color[i*3] = rgb[0];
+					color[i*3+1] = rgb[1];
+					color[i*3+2] = rgb[2];
 				}
-				depthGeometry.setDrawRange(d_start,d_range);
-				sketchGeometry.setDrawRange(s_start,s_range);
+				var endOfRange = allData[nowDataNumber].depthData.vertices.length*3;//表示領域の最後尾
+				depthGeometry.setDrawRange(0,endOfRange);//表示領域を再設定
+
+
+				//sketch data
+				//座標と色の書き換えを実行
+				sketchGeometry.attributes.position.needsUpdate = true;//頂点座標の書き換えを許可
+				sketchGeometry.attributes.color.needsUpdate = true;//色情報の書き換えを許可
+				var position = sketchGeometry.attributes.position.array;
+				var color = sketchGeometry.attributes.color.array;
+				var indices_array = [];//構成点同士のつなぎ方を設定
+
+				var nowIndex = 0;
+				for( var i=0 ; i<allData[nowDataNumber].sketchData.vertices.length ; i++ ){
+					if(allData[nowDataNumber].sketchData.vertices[i].length != 0){//構成点があるなら実行
+						//色
+						var rgb = allData[nowDataNumber].sketchData.colors[i].toArray();
+						for( var j=0 ; j<allData[nowDataNumber].sketchData.vertices[i].length ; j++){
+							var p = allData[nowDataNumber].sketchData.vertices[i][j];
+							//座標
+							position[nowIndex*3] = p.x;
+							position[nowIndex*3+1] = p.y;
+							position[nowIndex*3+2] = p.z;
+
+							//色
+							color[nowIndex*3] = rgb[0];
+							color[nowIndex*3+1] = rgb[1];
+							color[nowIndex*3+2] = rgb[2];
+
+							if( j!=0 ){
+								indices_array.push( nowIndex-1, nowIndex );//ひとつ前の登録点とつなぐように設定
+							}
+							nowIndex++;
+						}
+					}
+				}
+				sketchGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );//線のつなぎ方を設定
+				sketchGeometry.setDrawRange(0,nowIndex*3);//表示領域を再設定
+
+				//user sketch data
+				//座標と色の書き換えを実行
+				userSketchGeometry.attributes.position.needsUpdate = true;//頂点座標の書き換えを許可
+				userSketchGeometry.attributes.color.needsUpdate = true;//色情報の書き換えを許可
+				var position = userSketchGeometry.attributes.position.array;
+				var color = userSketchGeometry.attributes.color.array;
+				var indices_array = [];//構成点同士のつなぎ方を設定
+
+				var nowIndex = 0;
+				for( var i=0 ; i<allData[nowDataNumber].userSketchData.vertices.length ; i++ ){
+					if(allData[nowDataNumber].userSketchData.vertices[i].length != 0){//構成点があるなら実行
+						//色
+						var rgb = allData[nowDataNumber].userSketchData.colors[i].toArray();
+						for( var j=0 ; j<allData[nowDataNumber].userSketchData.vertices[i].length ; j++){
+							var p = allData[nowDataNumber].userSketchData.vertices[i][j];
+							//座標
+							position[nowIndex*3] = p.x;
+							position[nowIndex*3+1] = p.y;
+							position[nowIndex*3+2] = p.z;
+
+							//色
+							color[nowIndex*3] = rgb[0];
+							color[nowIndex*3+1] = rgb[1];
+							color[nowIndex*3+2] = rgb[2];
+
+							if( j!=0 ){
+								indices_array.push( nowIndex-1, nowIndex );//ひとつ前の登録点とつなぐように設定
+							}
+							nowIndex++;
+						}
+					}
+				}
+				userSketchGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );//線のつなぎ方を設定
+				userSketchGeometry.setDrawRange(0,nowIndex*3);//表示領域を再設定
+			}
+
+			function showUserSketchData(){
+				//user sketch data
+				//座標と色の書き換えを実行
+				userSketchGeometry.attributes.position.needsUpdate = true;//頂点座標の書き換えを許可
+				userSketchGeometry.attributes.color.needsUpdate = true;//色情報の書き換えを許可
+				var position = userSketchGeometry.attributes.position.array;
+				var color = userSketchGeometry.attributes.color.array;
+				var indices_array = [];//構成点同士のつなぎ方を設定
+
+				var nowIndex = 0;
+				for( var i=0 ; i<allData[nowDataNumber].userSketchData.vertices.length ; i++ ){
+					if(allData[nowDataNumber].userSketchData.vertices[i].length != 0){//構成点があるなら実行
+						//色
+						var rgb = allData[nowDataNumber].userSketchData.colors[i].toArray();
+						for( var j=0 ; j<allData[nowDataNumber].userSketchData.vertices[i].length ; j++){
+							var p = allData[nowDataNumber].userSketchData.vertices[i][j];
+							//座標
+							position[nowIndex*3] = p.x;
+							position[nowIndex*3+1] = p.y;
+							position[nowIndex*3+2] = p.z;
+
+							//色
+							color[nowIndex*3] = rgb[0];
+							color[nowIndex*3+1] = rgb[1];
+							color[nowIndex*3+2] = rgb[2];
+
+							if( j!=0 ){
+								indices_array.push( nowIndex-1, nowIndex );//ひとつ前の登録点とつなぐように設定
+							}
+							nowIndex++;
+						}
+					}
+				}
+				userSketchGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );//線のつなぎ方を設定
+				userSketchGeometry.setDrawRange(0,nowIndex*3);//表示領域を再設定
+
+				renderer.render(scene, camera);//表示を更新
 			}
 
 			//DOM側から実行する関数
@@ -610,36 +670,22 @@
 				controls.reset();//始点をリセットする
 			}
 			function deleteSketch(){
-
-				usersSketchData.lines = 0;
-				usersSketchData.vertices = [[]];
-				usersSketchData.positions_ = [];//すべてのスケッチの構成点;
-				usersSketchData.colors = [];
-				usersSketchData.colors_ = [];//すべてのスケッチの色情報;
-				usersSketchData.lineWidth = [];
-				usersSketchData.indices_array = [];
-				usersSketchData.endpoints = 0;
-
-				positions_ = usersSketchData.positions_ = new Float32Array(usersSketchData.maxpoints*3*3);//すべてのスケッチの構成点
-				colors_ = usersSketchData.colors_ = new Float32Array(usersSketchData.maxpoints*3*3);//すべてのスケッチの色情報
-
-				//更新
-				usGeometry.addAttribute( 'position', new THREE.BufferAttribute( positions_ , 3 ) );//構成点
-				usGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( colors_ ), 3 ) );//色
-				usGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( usersSketchData.indices_array ), 1 ) );//線のつなぎ方を設定
-				usGeometry.setDrawRange(0,usersSketchData.endpoints);//表示領域を決める
-
-				renderer.render(scene, camera);
+				//現在表示中のスケッチデータを削除する
+				//初期化
+				allData[nowDataNumber].userSketchData.colors=[];
+				allData[nowDataNumber].userSketchData.vertices=[[]];
+				allData[nowDataNumber].userSketchData.lineWidth=[];
+				showUserSketchData();//表示の更新
 			}
 			//depth data,sketch data の表示/非表示切り替え
-			function changeShowData(e){
+			function changeVisible(e){
 				//value = 0ならdepth,1ならsketchの表示を切り替える
 				if( e.value==0 ){
-					object_d.visible = e.checked;
+					depthObject.visible = e.checked;
 				}else if( e.value==1 ){
-					object_s.visible = e.checked;
+					sketchObject.visible = e.checked;
 				}else if( e.value==2 ){
-					object_us.visible = e.checked;
+					userSketchObject.visible = e.checked;
 				}
 				renderer.render(scene, camera);//表示を更新
 			}
@@ -695,86 +741,38 @@
 					var y = parseInt(event.clientY-rect.top);
 					var index = x + y * width;
 
-					if( index<allData[nowDataNumber].depthData.vertices.length ){//indexがはみ出ていなければ実行
+					if( index < allData[nowDataNumber].depthData.vertices.length ){//indexがはみ出ていなければ実行
 						var p = allData[nowDataNumber].depthData.vertices[index];//正面から見た時のマウス位置の三次元座標
 						var c = allData[nowDataNumber].depthData.colors[index];//正面から見た時のマウス位置の色情報
-						var rgb = c.toArray();
 
-						if( p.z==z0 ) return;
+						if( p.z==z0 ) return;//点の座標が原点なら追加しない
 
-						next = usersSketchData.vertices.length;//一つ前の座標の添字
-						var next = 0;
-						//一つ前の添字を出す ... 追加されているポイント数を数え上げる
-						for( var i=0 ; i<usersSketchData.vertices.length; i++ ){
-							next = next + usersSketchData.vertices[i].length;
-						}
-
-						if(mode==1){
-							console.log(usersSketchData.vertices[usersSketchData.vertices.length-1].length);
+						if(mode==1){//マウスを押した瞬間なら
 							//新しいスケッチストロークを追加
-							if(usersSketchData.vertices[usersSketchData.vertices.length-1].length==0){
-								//前の線に座標が含まれていなかったらその線に追加していく
-								usersSketchData.vertices[usersSketchData.vertices.length-1].push(p);
-
-							}else{//前の線に座標が含まれていたら線を新しく追加
-								usersSketchData.vertices.push([]);
-								usersSketchData.vertices[usersSketchData.vertices.length-1].push(p);
+							var length = allData[nowDataNumber].userSketchData.vertices.length;
+							var l = allData[nowDataNumber].userSketchData.vertices.length;
+							if( allData[nowDataNumber].userSketchData.vertices[l-1].length != 0 ){//一つ前に線があれば、新しい線を追加
+								allData[nowDataNumber].userSketchData.vertices.push([]);
 							}
-							usersSketchData.colors.push(c);//色を追加
-
-							//頂点情報の書き換え
-							var i = next*3;
-							usersSketchData.positions_[i] = p.x;
-							usersSketchData.positions_[i+1] = p.y;
-							usersSketchData.positions_[i+2] = p.z;
-							//線の色の書き換え
-							usersSketchData.colors_[i] = rgb[0];
-							usersSketchData.colors_[i+1] = rgb[1];
-							usersSketchData.colors_[i+2] = rgb[2];
-
-							usersSketchData.lines++;
-							next =next+1;
-
-						}else{
-							//その後ストロークに含まれるポイントの追加
-							usersSketchData.vertices[usersSketchData.vertices.length-1].push(p); //構成点を追加
-
-							//頂点情報の書き換え
-							var i = next*3;
-
-							usersSketchData.positions_[i] = p.x;
-							usersSketchData.positions_[i+1] = p.y;
-							usersSketchData.positions_[i+2] = p.z;
-							//線の色の書き換え
-							rgb = usersSketchData.colors[usersSketchData.colors.length-1].toArray();//線の色は書き始めの色と一緒 ここをコメントアウトでその位置の写真の色を使う
-							usersSketchData.colors_[i] = rgb[0];
-							usersSketchData.colors_[i+1] = rgb[1];
-							usersSketchData.colors_[i+2] = rgb[2];
-
-							usersSketchData.indices_array.push(next-1,next);
+							allData[nowDataNumber].userSketchData.colors.push(c);//色を追加
 						}
-
-						usersSketchData.endpoints = usersSketchData.indices_array.length;
-
-						//更新
-						usGeometry.addAttribute( 'position', new THREE.BufferAttribute( usersSketchData.positions_ , 3 ) );//構成点
-						usGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( usersSketchData.colors_ ), 3 ) );//色
-						usGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( usersSketchData.indices_array ), 1 ) );//線のつなぎ方を設定
-						usGeometry.setDrawRange(0,usersSketchData.endpoints);//表示領域を決める
-						renderer.render(scene, camera);
+						var length = allData[nowDataNumber].userSketchData.vertices.length;
+						allData[nowDataNumber].userSketchData.vertices[length-1].push(p);
 					}
+
+					showUserSketchData();//表示の更新
 
 					//raycaster
 					raycaster.setFromCamera( mouse, camera );
 
-					var intersects = raycaster.intersectObject( object_d );
+					var intersects = raycaster.intersectObject( depthObject );
 					if ( intersects.length > 0 ) {
 
 						var intersect = intersects[ 0 ];
 						var face = intersect.face;
 
 						//						var linePosition = line.geometry.attributes.position;//あわせるメッシュ
-						var meshPosition = object_d.geometry.attributes.position;//マウス位置のメッシュ
+						var meshPosition = depthObject.geometry.attributes.position;//マウス位置のメッシュ
 						//
 						//						linePosition.copyAt( 0, meshPosition, face.a );
 						//						linePosition.copyAt( 1, meshPosition, face.b );
@@ -799,30 +797,43 @@
 
 				var outputText = "DATE "+now+"\r\n";
 
-				//スケッチなしの場合
-				if(usersSketchData.vertices.length==1){
-					return 0;
-				}
+				//チェックボックスの状態を取得して書き出すストロークを決める
+				var chxBox = document.getElementById("changeVisibility").getElementsByTagName("input");;
 
-				var lineWidth = 12;//ストロークサイズはいまのところ決めうち
+				var lineWidth = 0;//ストロークサイズはいまのところ決めうち
 
-				//全てのスケッチストロークデータについて行う
-				for( var i=0 ; i<usersSketchData.vertices.length ; i++ ){
-					//色情報
-					var c = "0x"+usersSketchData.colors[i].getHexString();//0xFFFFFF
-					var line = "";
+				if(chxBox[1].checked){
+					//読み込み済みのスケッチを保存
+					for( var i=0 ; i<allData[nowDataNumber].sketchData.vertices.length ; i++ ){
+						//色情報
+						var c = "0x"+allData[nowDataNumber].sketchData.colors[i].getHexString();//0xFFFFFF
+						var line = "";
 
-					for ( var j=0;j<usersSketchData.vertices[i].length ; j++ ){
-						//座標
-						var p = usersSketchData.vertices[i][j];
-						line = line+" "+p.x+" "+p.y+" "+p.z;
+						for ( var j=0;j<allData[nowDataNumber].sketchData.vertices[i].length ; j++ ){
+							//座標
+							var p = allData[nowDataNumber].sketchData.vertices[i][j];
+							line = line+" "+p.x+" "+p.y+" "+p.z;
+						}
+						var row = c+" "+lineWidth+line+"\r\n";
+						outputText = outputText + row;
 					}
-					var row = c+" "+lineWidth+line+"\r\n";
-					outputText = outputText + row;
 				}
+				if(chxBox[2].checked){
+					//ユーザのスケッチを保存
+					for( var i=0 ; i<allData[nowDataNumber].userSketchData.vertices.length ; i++ ){
+						//色情報
+						var c = "0x"+allData[nowDataNumber].userSketchData.colors[i].getHexString();//0xFFFFFF
+						var line = "";
 
-				console.log("outputText",outputText);
-
+						for ( var j=0;j<allData[nowDataNumber].userSketchData.vertices[i].length ; j++ ){
+							//座標
+							var p = allData[nowDataNumber].userSketchData.vertices[i][j];
+							line = line+" "+p.x+" "+p.y+" "+p.z;
+						}
+						var row = c+" "+lineWidth+line+"\r\n";
+						outputText = outputText + row;
+					}
+				}
 				return outputText;
 			}
 			//ユーザスケッチをダウンロード
@@ -847,9 +858,6 @@
 
 			//ユーザスケッチを読み込む
 			function uploadFile(e){
-				deleteSketch();//現在のスケッチを消す
-
-
 				//perse
 				var files = e.target.files; // FileList object
 				if (files.length<=0) return;
@@ -872,10 +880,19 @@
 
 			function loadSketch(data){
 				data = data.split(/\r\n|\r|\n/);// 行ごとに分割
-				//perse data
 
-				var next = 0;
-				console.log("data.length",data.length)
+				//既に入っているデータを初期化
+				loadedSketchData.vertices = [];
+				loadedSketchData.colors = [];
+				loadedSketchData.lineWidth = [];
+
+				//perse data and add sketch lines
+				loadedSketchGeometry.attributes.position.needsUpdate = true;//頂点座標の書き換えを許可
+				loadedSketchGeometry.attributes.color.needsUpdate = true;//色情報の書き換えを許可
+				var position = loadedSketchGeometry.attributes.position.array;
+				var color = loadedSketchGeometry.attributes.color.array;
+				var indices_array = [];
+				var nowIndex = 0;
 
 				for(var i=1;i<data.length;i++){//データは一行目から
 					var d = data[i].split(' ');
@@ -883,14 +900,15 @@
 					//行の色
 					var c = new THREE.Color(parseInt(d[0]));// color 10進数
 					var rgb = c.toArray(); 
-					usersSketchData.colors.push(c);
+					loadedSketchData.colors.push(c);
 
 					//線の太さ
 					var w = parseInt(d[1]);// 太さ情報
-					usersSketchData.lineWidth.push(w);
+					loadedSketchData.lineWidth.push(w);
 
 					var points = [];
-					//座標情報
+
+					//座標情報と色情報の書き換え・登録
 					for(var j=2 ; j<d.length ; j=j+3){
 						var px = parseFloat(d[j]);
 						var py = parseFloat(d[j+1]);
@@ -898,38 +916,30 @@
 
 						var p = new THREE.Vector3(px,py,pz);
 
-						//頂点情報の書き換え
-						var idx = next*3;
-						usersSketchData.positions_[idx] = p.x;
-						usersSketchData.positions_[idx+1] = p.y;
-						usersSketchData.positions_[idx+2] = p.z;
+						//頂点情報の書き換え TODO
+						var idx = nowIndex*3;
+
+						position[idx] = p.x;
+						position[idx+1] = p.y;
+						position[idx+2] = p.z;
 
 						//線の色の書き換え
-						usersSketchData.colors_[idx] = rgb[0];
-						usersSketchData.colors_[idx+1] = rgb[1];
-						usersSketchData.colors_[idx+2] = rgb[2];
+						color[idx] = rgb[0];
+						color[idx+1] = rgb[1];
+						color[idx+2] = rgb[2];
 
 						//どの点同士をつなぐか
-
-						if( points.length != 0 )//ストロークの最初の線でなければ
-							usersSketchData.indices_array.push(next-1,next);//一つ前の点とつなぐように設定
+						if( j != 2 )//ストロークの最初の線でなければ
+							indices_array.push(nowIndex-1,nowIndex);//一つ前の点とつなぐように設定
 
 						points.push(p);
-						next++;
+						nowIndex++;
 					}
-					usersSketchData.vertices.push(points);
+					loadedSketchData.vertices.push(points);
 				}
-				console.log("usersSketchData.vertices",usersSketchData.vertices);
-				usersSketchData.lines = usersSketchData.colors.length;
-
-
-				usersSketchData.endpoints = usersSketchData.indices_array.length;
-
-				//更新
-				usGeometry.addAttribute( 'position', new THREE.BufferAttribute( usersSketchData.positions_ , 3 ) );//構成点
-				usGeometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( usersSketchData.colors_ ), 3 ) );//色
-				usGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( usersSketchData.indices_array ), 1 ) );//線のつなぎ方を設定
-				usGeometry.setDrawRange(0,usersSketchData.endpoints);//表示領域を決める
+				loadedSketchGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( indices_array ), 1 ) );//線のつなぎ方を設定
+				loadedSketchGeometry.setDrawRange(0,nowIndex*3);//表示領域を再設定
+				loadedSketchObject.visible = true;//表示,非表示設定
 				renderer.render(scene, camera);
 			}
 		</script>
@@ -941,10 +951,10 @@
 		<div id="controles">
 			<input id="changeMode" type="checkbox" data-toggle="toggle" checked data-on="Sketch Mode" data-off="View Mode">
 
-			<div class="checkbox">
-				<label><input type="checkbox" value="0" onclick="changeShowData(this)">Depth Data</label>
-				<label><input type="checkbox" value="1" onclick="changeShowData(this)" checked>Sketch Data</label>
-				<label><input type="checkbox" value="2" onclick="changeShowData(this)" checked>Your Sketch Data</label>
+			<div class="checkbox" id="changeVisibility">
+				<label><input type="checkbox" value="0" onclick="changeVisible(this)">Depth Data</label>
+				<label><input type="checkbox" value="1" onclick="changeVisible(this)" checked>Sketch Data</label>
+				<label><input type="checkbox" value="2" onclick="changeVisible(this)" checked>Your Sketch Data</label>
 			</div>
 
 			<br>
@@ -964,7 +974,6 @@
 				<button type="submit" class="btn btn-success" onclick="resetView()">RESET VIEWPOINT</button>
 			</div>
 
-
 			<!-- show sketch list -->
 
 			<div id="datalist">
@@ -976,8 +985,20 @@
 			<button type="submit" class="btn btn-danger" onclick="deleteSketch()">DELETE SKETCH</button>
 			<br>
 			<br>
+			<button type="submit" class="btn btn-danger" onclick="deleteSketch()">DELETE SKETCH</button>
 			<br>
 			<br>
+<<<<<<< HEAD
+			<br>
+			<br>
+			<p>Download / Upload Your Sketch Data</p>
+			<button class="btn btn-default download" value="0" type="submit" onclick="downloadFile(this)">DOWNLOAD(.txt)</button>
+			<button class="btn btn-default download" value="1" type="submit" onclick="downloadFile(this)">DOWNLOAD(.png)</button>
+			<p>
+				<input type="file" id="files" name="files[]" multiple />
+			</p>
+
+=======
 			<p>Download / Upload Your Sketch Data</p>
 			<button class="btn btn-default download" value="0" type="submit" onclick="downloadFile(this)">DOWNLOAD(.txt)</button>
 			<button class="btn btn-default download" value="1" type="submit" onclick="downloadFile(this)">DOWNLOAD(.png)</button>
@@ -985,6 +1006,7 @@
 
 
 			<br>
+>>>>>>> master
 		</div>
 
 	</body>
